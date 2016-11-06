@@ -358,6 +358,24 @@ class Tracé:
                         self.retirer(pion)
                         self.poser(pion, i + 1)
 
+    def ordre(self):
+        """Affiche l'ordre des équipes dans la course
+        """
+        couleurs = list()
+        for i in reversed(range(min(self.positions.values()),
+                                max(self.positions.values()) + 1)):
+            case = self.cases[i]
+            pion = case.droite
+            if pion is not None and pion.joueur.couleur not in couleurs:
+                couleurs.append(pion.joueur.couleur)
+            pion = case.gauche
+            if pion is not None and pion.joueur.couleur not in couleurs:
+                couleurs.append(pion.joueur.couleur)
+
+        # Affichage
+        for i in range(len(couleurs)):
+            print("Équipe n°{} : {}".format(i + 1, couleurs[i].name))
+
 
 def principal():
     joueurs = [Humain(Couleur.rouge), Robot(Couleur.noir),
@@ -444,6 +462,7 @@ def principal():
 
     # Fin de la partie
     tracé.afficher()
+    tracé.ordre()
 
 
 if __name__ == "__main__":
