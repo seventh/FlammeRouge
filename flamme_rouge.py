@@ -153,6 +153,8 @@ class Humain(Joueur):
 
 
 class Robot(Joueur):
+    """Robot qui joue au pif
+    """
 
     def placer(self, tracé):
         libres = list()
@@ -172,6 +174,30 @@ class Robot(Joueur):
 
         sprinteur = random.sample(énergies_sprinteur, 1)[0]
         rouleur = random.sample(énergies_rouleur, 1)[0]
+
+        énergies_sprinteur.remove(sprinteur)
+        énergies_rouleur.remove(rouleur)
+
+        self.défausse_sprinteur.extend(énergies_sprinteur)
+        self.défausse_rouleur.extend(énergies_rouleur)
+
+        return Paire(sprinteur, rouleur)
+
+
+class Robourrin(Joueur):
+    """Robot qui joue tout ce qu'il a de plus fort
+    """
+
+    def placer(self, tracé):
+        return Paire(4, 4)
+
+    def jouer(self, tracé):
+        énergies_sprinteur = self._piocher(
+            self.sprinteur, self.défausse_sprinteur)
+        énergies_rouleur = self._piocher(self.rouleur, self.défausse_rouleur)
+
+        sprinteur = max(énergies_sprinteur)
+        rouleur = max(énergies_rouleur)
 
         énergies_sprinteur.remove(sprinteur)
         énergies_rouleur.remove(rouleur)
@@ -378,7 +404,7 @@ class Tracé:
 
 
 def principal():
-    joueurs = [Humain(Couleur.rouge), Robot(Couleur.noir),
+    joueurs = [Humain(Couleur.rouge), Robourrin(Couleur.noir),
                Robot(Couleur.bleu), Robot(Couleur.vert)]
     random.shuffle(joueurs)
     tracé = Tracé()
