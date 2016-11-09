@@ -131,16 +131,16 @@ class Humain(Joueur):
             ", ".join(map(str, énergies_rouleur))))
 
         while True:
-            sprinteur = int(input("Énergie du sprinteur ? "))
             try:
+                sprinteur = int(input("Énergie du sprinteur ? "))
                 énergies_sprinteur.remove(sprinteur)
                 break
             except ValueError:
                 pass
 
         while True:
-            rouleur = int(input("Énergie du rouleur ? "))
             try:
+                rouleur = int(input("Énergie du rouleur ? "))
                 énergies_rouleur.remove(rouleur)
                 break
             except ValueError:
