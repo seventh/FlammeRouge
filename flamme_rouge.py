@@ -99,12 +99,21 @@ class Joueur:
 class Humain(Joueur):
 
     def placer(self, tracé):
+        libres = list()
+        for i in range(5):
+            case = tracé.cases[i]
+            if case.gauche is None:
+                libres.append(i)
+            if case.droite is None:
+                libres.append(i)
+
         tracé.afficher(0, 5)
 
         while True:
             try:
                 sprinteur = 73 - int(input("Position du sprinteur ? "))
-                if 0 <= sprinteur <= 4:
+                if sprinteur in libres:
+                    libres.remove(sprinteur)
                     break
             except ValueError:
                 pass
@@ -112,7 +121,8 @@ class Humain(Joueur):
         while True:
             try:
                 rouleur = 73 - int(input("Position du rouleur ? "))
-                if 0 <= rouleur <= 4:
+                if rouleur in libres:
+                    libres.remove(rouleur)
                     break
             except ValueError:
                 pass
