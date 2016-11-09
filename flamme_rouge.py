@@ -263,7 +263,7 @@ class Tracé:
 
     def __init__(self):
         self.cases = list()
-        for i in range(72 + 9):
+        for i in range(73 + 9):
             self.cases.append(Case())
         self.positions = dict()
 
