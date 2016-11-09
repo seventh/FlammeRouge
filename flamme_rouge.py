@@ -297,7 +297,10 @@ class Tracé:
         # Côté gauche
         ligne = str()
         for i in range(début, garde):
-            ligne += "| "
+            if i == 5 or i == 73:
+                ligne += "‖ "
+            else:
+                ligne += "| "
             pion = self.cases[i].gauche
             if pion is None:
                 ligne += "  "
@@ -316,7 +319,10 @@ class Tracé:
                 else:
                     ligne += "r"
             ligne += " "
-        ligne += "|"
+        if garde == 5 or garde == 73:
+            ligne += "‖"
+        else:
+            ligne += "|"
         print(ligne)
 
         # Ligne médiane
@@ -329,7 +335,10 @@ class Tracé:
         # Côté droit
         ligne = str()
         for i in range(début, garde):
-            ligne += "| "
+            if i == 5 or i == 73:
+                ligne += "‖ "
+            else:
+                ligne += "| "
             pion = self.cases[i].droite
             if pion is None:
                 ligne += "  "
@@ -348,7 +357,10 @@ class Tracé:
                 else:
                     ligne += "r"
             ligne += " "
-        ligne += "|"
+        if garde == 5 or garde == 73:
+            ligne += "‖"
+        else:
+            ligne += "|"
         print(ligne)
 
         # Ligne inférieure
@@ -361,8 +373,14 @@ class Tracé:
         # Numéro de case
         ligne = str()
         for i in range(début, garde):
-            ligne += "| {:>2} ".format(73 - i)
-        ligne += "|"
+            if i == 5 or i == 73:
+                ligne += "‖ {:>2} ".format(73 - i)
+            else:
+                ligne += "| {:>2} ".format(73 - i)
+        if garde == 5 or garde == 73:
+            ligne += "‖"
+        else:
+            ligne += "|"
         print(ligne)
 
     def aspirer(self):
