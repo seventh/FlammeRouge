@@ -490,7 +490,7 @@ def principal():
                        1 + max(tracé.positions.values())):
             case = tracé.cases[i]
             pion = case.droite
-            if pion is not None and tracé.cases[i + 1].droite is None:
+            if pion is not None and i < 73 and tracé.cases[i + 1].droite is None:
                 if pion.profil == Profil.sprinteur:
                     pion.joueur.défausse_sprinteur.append(2)
                     logging.info("Le sprinteur {} fatigue !".format(
@@ -501,7 +501,7 @@ def principal():
                         pion.joueur.couleur.name))
 
             pion = case.gauche
-            if pion is not None and tracé.cases[i + 1].gauche is None:
+            if pion is not None and i < 73 and tracé.cases[i + 1].gauche is None:
                 if pion.profil == Profil.sprinteur:
                     pion.joueur.défausse_sprinteur.append(2)
                     logging.info("Le sprinteur {} fatigue !".format(
