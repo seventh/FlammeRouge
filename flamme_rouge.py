@@ -297,7 +297,7 @@ class Tracé:
         self.cases[self.positions[pion]].retirer(pion)
         del self.positions[pion]
 
-    def afficher(self, début=None, garde=None):
+    def afficher(self, début=None, garde=None, aspiration=list()):
         if début is None:
             début = min(self.positions.values(), default=0)
         if garde is None:
@@ -317,11 +317,14 @@ class Tracé:
                 ligne += "‖ "
             else:
                 ligne += "| "
-            pion = self.cases[i].gauche
-            if pion is None:
-                ligne += "  "
+            if i in aspiration:
+                ligne += "→→"
             else:
-                ligne += str(pion)
+                pion = self.cases[i].gauche
+                if pion is None:
+                    ligne += "  "
+                else:
+                    ligne += str(pion)
             ligne += " "
         if garde == self.départ or garde == self.arrivée:
             ligne += "‖"
@@ -343,11 +346,14 @@ class Tracé:
                 ligne += "‖ "
             else:
                 ligne += "| "
-            pion = self.cases[i].droite
-            if pion is None:
-                ligne += "  "
+            if i in aspiration:
+                ligne += "→→"
             else:
-                ligne += str(pion)
+                pion = self.cases[i].droite
+                if pion is None:
+                    ligne += "  "
+                else:
+                    ligne += str(pion)
             ligne += " "
         if garde == self.départ or garde == self.arrivée:
             ligne += "‖"
@@ -378,38 +384,32 @@ class Tracé:
     def aspirer(self):
         """Applique l'algorithme d'aspiration
         """
-        aspiration = False
-        début = min(self.positions.values())
-        garde = max(self.positions.values()) - 1
-        j = début
-        while j < garde:
-            while j < garde and self.cases[j].est_vide():
-                j += 1
-            k = j
-            while k + 1 < garde and not self.cases[k + 1].est_vide():
-                k += 1
-            if not (self.cases[k + 1].est_vide() and
-                    not self.cases[k + 2].est_vide()):
-                j = k + 2
-            else:
-                # Aspiration des cases j à k incluse
-                if not aspiration:
-                    logging.info("Avant la phase d'aspiration")
-                    self.afficher(début, garde + 2)
-                    aspiration = True
-                for i in reversed(range(j, k + 1)):
-                    case = self.cases[i]
-                    pion = case.droite
-                    self.retirer(pion)
-                    self.poser(pion, i + 1)
-                    pion = case.gauche
-                    if pion is not None:
-                        self.retirer(pion)
-                        self.poser(pion, i + 1)
+        # Détermination des cases d'aspiration
+        cases_aspiration = list()
+        for i in range(min(self.positions.values()) + 1,
+                       max(self.positions.values())):
+            if (not self.cases[i - 1].est_vide() and
+                    self.cases[i].est_vide() and
+                    not self.cases[i + 1].est_vide()):
+                cases_aspiration.append(i)
 
-        if aspiration:
-            logging.info("Après la phase d'aspiration")
-            self.afficher(début, garde + 2)
+        # Affichage
+        if len(cases_aspiration) != 0:
+            self.afficher(aspiration=cases_aspiration)
+
+        # Application de l'aspiration
+        for i in cases_aspiration:
+            j = i - 1
+            while not self.cases[j].est_vide():
+                case = self.cases[j]
+                pion = case.droite
+                self.retirer(pion)
+                self.poser(pion, j + 1)
+                pion = case.gauche
+                if pion is not None:
+                    self.retirer(pion)
+                    self.poser(pion, j + 1)
+                j -= 1
 
     def fatiguer(self):
         """Ajoute de la fatigue à tous les coureurs face au vent
