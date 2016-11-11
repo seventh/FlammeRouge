@@ -16,6 +16,12 @@ You'll need a running `Python 3`_ interpreter.
 
 .. _Python 3: http://www.python.org
 
+Command line arguments
+----------------------
+
+-c [address] port     Launch as client, connecting to server at specified adress and port
+-h nb_humans          Launch as server, specifies number of humans players (including playing on the server command line)
+
 How to play
 -----------
 
