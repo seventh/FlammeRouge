@@ -419,32 +419,30 @@ class Tracé:
         for i in range(min(self.positions.values()),
                        1 + max(self.positions.values())):
             case = self.cases[i]
-            pion = case.droite
-            if (pion is not None and
+            if (not case.est_vide() and
                     i < self.arrivée and
-                    self.cases[i + 1].droite is None):
+                    self.cases[i + 1].est_vide()):
+                pion = case.droite
                 if pion.profil == Profil.sprinteur:
                     pion.joueur.défausse_sprinteur.append(2)
                 else:
                     pion.joueur.défausse_rouleur.append(2)
                 fatigués[pion.joueur.couleur].append(pion)
 
-            pion = case.gauche
-            if (pion is not None and
-                    i < self.arrivée and
-                    self.cases[i + 1].gauche is None):
-                if pion.profil == Profil.sprinteur:
-                    pion.joueur.défausse_sprinteur.append(2)
-                else:
-                    pion.joueur.défausse_rouleur.append(2)
-                fatigués[pion.joueur.couleur].append(pion)
+                pion = case.gauche
+                if pion is not None:
+                    if pion.profil == Profil.sprinteur:
+                        pion.joueur.défausse_sprinteur.append(2)
+                    else:
+                        pion.joueur.défausse_rouleur.append(2)
+                    fatigués[pion.joueur.couleur].append(pion)
 
         for couleur in sorted(fatigués, key=lambda c: c.name):
             ligne = "Équipe {}e : fatigue ".format(couleur.name)
             coureurs = sorted(fatigués[couleur], key=str)
             ligne += " et ".join(["du {}".format(x.profil.name)
                                   for x in coureurs])
-            logging.info(ligne)
+            print(ligne)
 
     def ordre(self):
         """Affiche l'ordre des équipes dans la course
@@ -531,5 +529,5 @@ def principal():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.ERROR)
     principal()
