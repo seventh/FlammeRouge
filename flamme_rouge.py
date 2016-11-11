@@ -378,6 +378,7 @@ class Tracé:
     def aspirer(self):
         """Applique l'algorithme d'aspiration
         """
+        aspiration = False
         début = min(self.positions.values())
         garde = max(self.positions.values()) - 1
         j = début
@@ -392,8 +393,10 @@ class Tracé:
                 j = k + 2
             else:
                 # Aspiration des cases j à k incluse
-                logging.info("Aspiration !")
-                self.afficher()
+                if not aspiration:
+                    logging.info("Avant la phase d'aspiration")
+                    self.afficher(début, garde + 2)
+                    aspiration = True
                 for i in reversed(range(j, k + 1)):
                     case = self.cases[i]
                     pion = case.droite
@@ -403,6 +406,10 @@ class Tracé:
                     if pion is not None:
                         self.retirer(pion)
                         self.poser(pion, i + 1)
+
+        if aspiration:
+            logging.info("Après la phase d'aspiration")
+            self.afficher(début, garde + 2)
 
     def fatiguer(self):
         """Ajoute de la fatigue à tous les coureurs face au vent
@@ -459,8 +466,8 @@ class Tracé:
 
 
 def principal():
-    joueurs = [Humain(Couleur.gris), Robourrin(Couleur.noir),
-               Robot(Couleur.bleu), Robot(Couleur.vert)]
+    joueurs = [Humain(Couleur.gris), Robourrin(Couleur.bleu),
+               Robot(Couleur.noir), Robot(Couleur.vert)]
     random.shuffle(joueurs)
     tracé = Tracé()
 
