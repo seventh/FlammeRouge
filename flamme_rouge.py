@@ -47,7 +47,7 @@ class Couleur(enum.Enum):
 
     bleu = 1
     noir = 2
-    rouge = 3
+    gris = 3
     vert = 4
 
 
@@ -100,18 +100,19 @@ class Humain(Joueur):
 
     def placer(self, tracé):
         libres = list()
-        for i in range(5):
+        for i in range(tracé.départ):
             case = tracé.cases[i]
             if case.gauche is None:
                 libres.append(i)
             if case.droite is None:
                 libres.append(i)
 
-        tracé.afficher(0, 5)
+        tracé.afficher(0, tracé.départ)
 
         while True:
             try:
-                sprinteur = 73 - int(input("Position du sprinteur ? "))
+                sprinteur = tracé.arrivée - \
+                    int(input("Position du sprinteur ? "))
                 if sprinteur in libres:
                     libres.remove(sprinteur)
                     break
@@ -120,7 +121,7 @@ class Humain(Joueur):
 
         while True:
             try:
-                rouleur = 73 - int(input("Position du rouleur ? "))
+                rouleur = tracé.arrivée - int(input("Position du rouleur ? "))
                 if rouleur in libres:
                     libres.remove(rouleur)
                     break
@@ -168,7 +169,7 @@ class Robot(Joueur):
 
     def placer(self, tracé):
         libres = list()
-        for i in range(5):
+        for i in range(tracé.départ):
             case = tracé.cases[i]
             if case.gauche is None:
                 libres.append(i)
@@ -253,19 +254,34 @@ class Profil(enum.Enum):
     rouleur = 2
 
 
-Pion = collections.namedtuple("Pion", ["profil", "joueur"])
+class Pion(collections.namedtuple("Pion", ["profil", "joueur"])):
+
+    def __str__(self):
+        retour = self.profil.name[0].upper()
+        retour += self.joueur.couleur.name[0].lower()
+
+        return retour
 
 
 class Tracé:
-    """Un tracé, aussi biscornu soit-il, fait 78 cases. La ligne de départ
-    comprend cinq cases, la ligne d'arrivée également.
-    """
 
     def __init__(self):
         self.cases = list()
-        for i in range(73 + 9):
+        for i in range(self.arrivée + 9):
             self.cases.append(Case())
         self.positions = dict()
+
+    @property
+    def départ(self):
+        """Indice de la première case de course
+        """
+        return 5
+
+    @property
+    def arrivée(self):
+        """Indice de la dernière case de course
+        """
+        return 73
 
     def poser(self, pion, ligne):
         """Placement des pions sur la ligne de départ
@@ -297,7 +313,7 @@ class Tracé:
         # Côté gauche
         ligne = str()
         for i in range(début, garde):
-            if i == 5 or i == 73:
+            if i == self.départ or i == self.arrivée:
                 ligne += "‖ "
             else:
                 ligne += "| "
@@ -305,21 +321,9 @@ class Tracé:
             if pion is None:
                 ligne += "  "
             else:
-                if pion.profil == Profil.sprinteur:
-                    ligne += "S"
-                else:
-                    ligne += "R"
-                couleur = pion.joueur.couleur
-                if couleur == Couleur.noir:
-                    ligne += "n"
-                elif couleur == Couleur.bleu:
-                    ligne += "b"
-                elif couleur == Couleur.vert:
-                    ligne += "v"
-                else:
-                    ligne += "r"
+                ligne += str(pion)
             ligne += " "
-        if garde == 5 or garde == 73:
+        if garde == self.départ or garde == self.arrivée:
             ligne += "‖"
         else:
             ligne += "|"
@@ -335,7 +339,7 @@ class Tracé:
         # Côté droit
         ligne = str()
         for i in range(début, garde):
-            if i == 5 or i == 73:
+            if i == self.départ or i == self.arrivée:
                 ligne += "‖ "
             else:
                 ligne += "| "
@@ -343,21 +347,9 @@ class Tracé:
             if pion is None:
                 ligne += "  "
             else:
-                if pion.profil == Profil.sprinteur:
-                    ligne += "S"
-                else:
-                    ligne += "R"
-                couleur = pion.joueur.couleur
-                if couleur == Couleur.noir:
-                    ligne += "n"
-                elif couleur == Couleur.bleu:
-                    ligne += "b"
-                elif couleur == Couleur.vert:
-                    ligne += "v"
-                else:
-                    ligne += "r"
+                ligne += str(pion)
             ligne += " "
-        if garde == 5 or garde == 73:
+        if garde == self.départ or garde == self.arrivée:
             ligne += "‖"
         else:
             ligne += "|"
@@ -373,11 +365,11 @@ class Tracé:
         # Numéro de case
         ligne = str()
         for i in range(début, garde):
-            if i == 5 or i == 73:
-                ligne += "‖ {:>2} ".format(73 - i)
+            if i == self.départ or i == self.arrivée:
+                ligne += "‖ {:>2} ".format(self.arrivée - i)
             else:
-                ligne += "| {:>2} ".format(73 - i)
-        if garde == 5 or garde == 73:
+                ligne += "| {:>2} ".format(self.arrivée - i)
+        if garde == self.départ or garde == self.arrivée:
             ligne += "‖"
         else:
             ligne += "|"
@@ -412,6 +404,41 @@ class Tracé:
                         self.retirer(pion)
                         self.poser(pion, i + 1)
 
+    def fatiguer(self):
+        """Ajoute de la fatigue à tous les coureurs face au vent
+        """
+        fatigués = collections.defaultdict(list)
+
+        for i in range(min(self.positions.values()),
+                       1 + max(self.positions.values())):
+            case = self.cases[i]
+            pion = case.droite
+            if (pion is not None and
+                    i < self.arrivée and
+                    self.cases[i + 1].droite is None):
+                if pion.profil == Profil.sprinteur:
+                    pion.joueur.défausse_sprinteur.append(2)
+                else:
+                    pion.joueur.défausse_rouleur.append(2)
+                fatigués[pion.joueur.couleur].append(pion)
+
+            pion = case.gauche
+            if (pion is not None and
+                    i < self.arrivée and
+                    self.cases[i + 1].gauche is None):
+                if pion.profil == Profil.sprinteur:
+                    pion.joueur.défausse_sprinteur.append(2)
+                else:
+                    pion.joueur.défausse_rouleur.append(2)
+                fatigués[pion.joueur.couleur].append(pion)
+
+        for couleur in sorted(fatigués, key=lambda c: c.name):
+            ligne = "Équipe {}e : fatigue ".format(couleur.name)
+            coureurs = sorted(fatigués[couleur], key=str)
+            ligne += " et ".join(["du {}".format(x.profil.name)
+                                  for x in coureurs])
+            logging.info(ligne)
+
     def ordre(self):
         """Affiche l'ordre des équipes dans la course
         """
@@ -432,7 +459,7 @@ class Tracé:
 
 
 def principal():
-    joueurs = [Humain(Couleur.rouge), Robourrin(Couleur.noir),
+    joueurs = [Humain(Couleur.gris), Robourrin(Couleur.noir),
                Robot(Couleur.bleu), Robot(Couleur.vert)]
     random.shuffle(joueurs)
     tracé = Tracé()
@@ -454,6 +481,8 @@ def principal():
     # Course !
     fin_de_partie = False
     while not fin_de_partie:
+        print("\n")
+
         # Phase énergie
         paires = dict()
         for joueur in joueurs:
@@ -482,34 +511,9 @@ def principal():
                 tracé.retirer(pion)
                 tracé.poser(pion, i + énergie)
 
-        # Aspiration
+        # Phase finale
         tracé.aspirer()
-
-        # Fatigue
-        for i in range(min(tracé.positions.values()),
-                       1 + max(tracé.positions.values())):
-            case = tracé.cases[i]
-            pion = case.droite
-            if pion is not None and i < 73 and tracé.cases[i + 1].droite is None:
-                if pion.profil == Profil.sprinteur:
-                    pion.joueur.défausse_sprinteur.append(2)
-                    logging.info("Le sprinteur {} fatigue !".format(
-                        pion.joueur.couleur.name))
-                else:
-                    pion.joueur.défausse_rouleur.append(2)
-                    logging.info("Le rouleur {} fatigue !".format(
-                        pion.joueur.couleur.name))
-
-            pion = case.gauche
-            if pion is not None and i < 73 and tracé.cases[i + 1].gauche is None:
-                if pion.profil == Profil.sprinteur:
-                    pion.joueur.défausse_sprinteur.append(2)
-                    logging.info("Le sprinteur {} fatigue !".format(
-                        pion.joueur.couleur.name))
-                else:
-                    pion.joueur.défausse_rouleur.append(2)
-                    logging.info("Le rouleur {} fatigue !".format(
-                        pion.joueur.couleur.name))
+        tracé.fatiguer()
 
         # Détection de la fin de partie
         fin_de_partie = (max(tracé.positions.values()) > 72)
