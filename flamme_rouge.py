@@ -39,8 +39,79 @@
 
 import collections
 import enum
+import json
 import logging
 import random
+
+
+def charger_parcours(chemin):
+    # Lecture du fichier
+    parcours = None
+    with open(chemin, "rt") as entrée:
+        parcours = json.load(entrée)
+
+    # Vérification
+    for nom_case, case in parcours["cases"].items():
+        if not ("angle" in case and
+                "pente" in case):
+            logging.error("Case {} inchoérente".format(nom_case))
+
+    for nom_tronçon, tronçon in parcours["tronçons"].items():
+        if tronçon is None:
+            logging.warning("Tronçon {} non déterminé".format(nom_tronçon))
+        else:
+            if len(tronçon) not in [2, 6]:
+                logging.error("Tronçon {} incohérent".format(nom_tronçon))
+            for nom_case in tronçon:
+                if nom_case not in parcours["cases"]:
+                    logging.error(
+                        "Case inconnue dans tronçon «{}»".format(nom_tronçon))
+
+    for nom_tracé, tracé in parcours["tracés"].items():
+        for nom_tronçon in tracé:
+            if nom_tronçon not in parcours["tronçons"]:
+                logging.error(
+                    "Tronçon inconnu dans tracé {}".format(nom_tracé))
+            elif parcours["tronçons"][nom_tronçon] is None:
+                logging.error(
+                    "Le tracé «{}» référence le tronçon «{}»".format(
+                        nom_tracé, nom_tronçon))
+
+    # Choix du tracé par le joueur
+    noms = sorted(parcours["tracés"])
+    for i, nom_tracé in enumerate(noms):
+        print("{}) {}".format(i + 1, nom_tracé))
+    while True:
+        try:
+            i = int(input("Choix du parcours ? ")) - 1
+            if 0 <= i < len(noms):
+                nom_tracé = noms[i]
+                break
+        except ValueError:
+            pass
+
+    # Construction du tracé choisi
+    cases = list()
+    départ = None
+    arrivée = None
+    tracé = parcours["tracés"][nom_tracé]
+    for nom_tronçon in tracé:
+        for nom_case in parcours["tronçons"][nom_tronçon]:
+            case = parcours["cases"][nom_case]
+            if case["pente"] == 0:
+                cases.append(Case(Pente.plat))
+            elif case["pente"] == 1:
+                cases.append(Case(Pente.col))
+            else:  # case["pente"] == -1
+                cases.append(Case(Pente.descente))
+
+            if nom_case == "départ":
+                départ = len(cases)
+            elif nom_case == "arrivée" and arrivée is None:
+                arrivée = len(cases) - 1
+
+    tracé = Tracé(cases, départ, arrivée)
+    return tracé
 
 
 class Couleur(enum.Enum):
@@ -200,7 +271,7 @@ class Robourrin(Joueur):
     """
 
     def placer(self, tracé):
-        return Paire(4, 4)
+        return Paire(tracé.départ - 1, tracé.départ - 1)
 
     def jouer(self, tracé):
         énergies_sprinteur = self._piocher(
@@ -275,30 +346,24 @@ class Pion(collections.namedtuple("Pion", ["profil", "joueur"])):
 
 class Tracé:
 
-    def __init__(self):
-        self.cases = list()
-        for i in range(self.arrivée + 9):
-            case = Case(Pente.plat)
-            if 20 <= i < 23:
-                case = Case(Pente.col)
-            elif 23 <= i < 26:
-                case = Case(Pente.descente)
-            elif 68 <= i < 73:
-                case = Case(Pente.col)
-            self.cases.append(case)
+    def __init__(self, cases, départ, arrivée):
+        self.cases = cases
+        self._départ = départ
+        self._arrivée = arrivée
+
         self.positions = dict()
 
     @property
     def départ(self):
         """Indice de la première case de course
         """
-        return 5
+        return self._départ
 
     @property
     def arrivée(self):
         """Indice de la dernière case de course
         """
-        return 73
+        return self._arrivée
 
     def poser(self, pion, ligne):
         """Placement des pions sur la ligne de départ
@@ -451,6 +516,9 @@ class Tracé:
         i = self.positions[pion]
         self.retirer(pion)
 
+        # On ne peut pas sortir du plateau
+        énergie = min(énergie, len(self.cases) - i - 1)
+
         # Application des règles de déplacement
         if self.cases[i].pente == Pente.descente:
             énergie = max(5, énergie)
@@ -551,7 +619,7 @@ def principal():
     joueurs = [Humain(Couleur.gris), Robourrin(Couleur.bleu),
                Robot(Couleur.noir), Robot(Couleur.vert)]
     random.shuffle(joueurs)
-    tracé = Tracé()
+    tracé = charger_parcours("parcours.json")
 
     # Placement initial
     for joueur in joueurs:
@@ -585,7 +653,7 @@ def principal():
         tracé.fatiguer()
 
         # Détection de la fin de partie
-        fin_de_partie = (max(tracé.positions.values()) > 72)
+        fin_de_partie = (max(tracé.positions.values()) >= tracé.arrivée)
 
     # Fin de la partie
     tracé.afficher()
@@ -593,5 +661,5 @@ def principal():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.ERROR)
+    logging.basicConfig(level=logging.WARNING)
     principal()
