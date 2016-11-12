@@ -61,6 +61,7 @@ Paire = collections.namedtuple("Paire", ["sprinteur", "rouleur"])
 
 
 class ClientServeur:
+
     def send(self, socket_tx, msg):
         socket_tx.send('{}:'.format(len(msg)).encode('utf-8'))
         socket_tx.send(msg)
@@ -80,9 +81,11 @@ class ClientServeur:
             fragments.append(fragment)
             longueur -= len(fragment)
 
-        return  b''.join(fragments)
+        return b''.join(fragments)
+
 
 class Client:
+
     def __getstate__(self):
         None
 
@@ -109,6 +112,7 @@ class Client:
 
 
 class ClientNul(Client):
+
     def afficher(self, tracé, début=None, garde=None, aspiration=list()):
         pass
 
@@ -127,25 +131,33 @@ class ClientNul(Client):
     def attente(self, couleurs):
         pass
 
-class ServeurConsole(Client,ClientServeur):
+
+class ServeurConsole(Client, ClientServeur):
+
     def __init__(self):
         serveur = socket.socket(
-                socket.AF_INET, socket.SOCK_STREAM)
+            socket.AF_INET, socket.SOCK_STREAM)
         serveur.bind((socket.gethostname(), 0))
         print(serveur.getsockname()[1])
         serveur.listen(1)
         self.socket = serveur.accept()[0]
 
     def afficher(self, tracé, début=None, garde=None, aspiration=list()):
-        message = pickle.dumps({"commande": "afficher", "tracé": tracé, "début": début, "garde": garde, "aspiration": aspiration})
+        message = pickle.dumps({"commande": "afficher",
+                                "tracé": tracé,
+                                "début": début,
+                                "garde": garde,
+                                "aspiration": aspiration})
         self.send(self.socket, message)
 
     def afficher_fatigue(self, tracé, fatigués):
-        message = pickle.dumps({"commande": "afficher_fatigue", "tracé": tracé, "fatigués": fatigués})
+        message = pickle.dumps(
+            {"commande": "afficher_fatigue", "tracé": tracé, "fatigués": fatigués})
         self.send(self.socket, message)
 
     def demander_positions(self, tracé, libres):
-        message = pickle.dumps({"commande": "demander_positions", "tracé": tracé, "libres": libres})
+        message = pickle.dumps(
+            {"commande": "demander_positions", "tracé": tracé, "libres": libres})
         while True:
             self.send(self.socket, message)
             try:
@@ -166,7 +178,9 @@ class ServeurConsole(Client,ClientServeur):
         return Paire(sprinteur, rouleur)
 
     def demander_jeu(self, énergies_sprinteur, énergies_rouleur):
-        message = pickle.dumps({"commande": "demander_jeu", "énergies_sprinteur": énergies_sprinteur, "énergies_rouleur": énergies_rouleur})
+        message = pickle.dumps({"commande": "demander_jeu",
+                                "énergies_sprinteur": énergies_sprinteur,
+                                "énergies_rouleur": énergies_rouleur})
         while True:
             self.send(self.socket, message)
             try:
@@ -199,7 +213,9 @@ class ServeurConsole(Client,ClientServeur):
         message = pickle.dumps({"commande": "couleur", "couleur": couleur})
         self.send(self.socket, message)
 
+
 class Console(Client):
+
     def afficher(self, tracé, début=None, garde=None, aspiration=list()):
         if début is None:
             print("\n")
@@ -222,7 +238,8 @@ class Console(Client):
 
         while True:
             try:
-                rouleur = tracé.arrivée - int(input("Position du rouleur {} ? ".format(self.couleur)))
+                rouleur = tracé.arrivée - \
+                    int(input("Position du rouleur {} ? ".format(self.couleur)))
                 if rouleur in libres:
                     libres.remove(rouleur)
                     break
@@ -239,7 +256,10 @@ class Console(Client):
 
         while True:
             try:
-                sprinteur = int(input("Énergie du sprinteur {} ? ".format(self.couleur)))
+                sprinteur = int(
+                    input(
+                        "Énergie du sprinteur {} ? ".format(
+                            self.couleur)))
                 énergies_sprinteur.remove(sprinteur)
                 break
             except ValueError:
@@ -247,7 +267,10 @@ class Console(Client):
 
         while True:
             try:
-                rouleur = int(input("Énergie du rouleur {} ? ".format(self.couleur)))
+                rouleur = int(
+                    input(
+                        "Énergie du rouleur {} ? ".format(
+                            self.couleur)))
                 énergies_rouleur.remove(rouleur)
                 break
             except ValueError:
@@ -258,7 +281,7 @@ class Console(Client):
     def ordre(self, couleurs):
         for i in range(len(couleurs)):
             print("Équipe n°{} : {}{}".format(i + 1, couleurs[i].name,
-                ' <---' if couleurs[i].name == self.couleur else ''))
+                                              ' <---' if couleurs[i].name == self.couleur else ''))
 
     def attente(self, couleurs):
         print("Attente joueur{} : {}".format(
@@ -269,7 +292,9 @@ class Console(Client):
         self.couleur = couleur.name
         print("Vous êtes le joueur {}".format(couleur.name))
 
-class ClientConsole(Console,ClientServeur):
+
+class ClientConsole(Console, ClientServeur):
+
     def __init__(self, adresse, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((adresse, port))
@@ -280,15 +305,23 @@ class ClientConsole(Console,ClientServeur):
                 message = self.recv(self.socket)
                 msg = pickle.loads(message)
                 if msg['commande'] == "afficher":
-                    Console.afficher(self, msg['tracé'], msg['début'], msg['garde'], msg['aspiration'])
+                    Console.afficher(
+                        self,
+                        msg['tracé'],
+                        msg['début'],
+                        msg['garde'],
+                        msg['aspiration'])
                 elif msg['commande'] == "afficher_fatigue":
-                    Console.afficher_fatigue(self, msg['tracé'], msg['fatigués'])
+                    Console.afficher_fatigue(
+                        self, msg['tracé'], msg['fatigués'])
                 elif msg['commande'] == "demander_positions":
-                    positions = Console.demander_positions(self, msg['tracé'], msg['libres'])
+                    positions = Console.demander_positions(
+                        self, msg['tracé'], msg['libres'])
                     réponse = pickle.dumps(positions)
                     self.socket = self.send(self.socket, réponse)
                 elif msg['commande'] == "demander_jeu":
-                    énergies = Console.demander_jeu(self, msg['énergies_sprinteur'], msg['énergies_rouleur'])
+                    énergies = Console.demander_jeu(
+                        self, msg['énergies_sprinteur'], msg['énergies_rouleur'])
                     réponse = pickle.dumps(énergies)
                     self.socket = self.send(self.socket, réponse)
                 elif msg['commande'] == "ordre":
@@ -304,19 +337,20 @@ class ClientConsole(Console,ClientServeur):
 
         self.socket.close()
 
+
 class Joueur:
 
     def __init__(self, couleur):
         self.couleur = couleur
         self.client = ClientNul()
         self.sprinteur = [2, 2, 2, 3]
-        #self.sprinteur = [2, 2, 2,
+        # self.sprinteur = [2, 2, 2,
         #                  3, 3, 3,
         #                  4, 4, 4,
         #                  5, 5, 5,
         #                  9, 9, 9]
         self.rouleur = [3, 3, 3, 4]
-        #self.rouleur = [3, 3, 3,
+        # self.rouleur = [3, 3, 3,
         #                4, 4, 4,
         #                5, 5, 5,
         #                6, 6, 6,
@@ -387,7 +421,7 @@ class Humain(Joueur):
 
         while True:
             choix = self.client.demander_jeu(list(énergies_sprinteur),
-                    list(énergies_rouleur))
+                                             list(énergies_rouleur))
             try:
                 sprinteur = int(choix.sprinteur)
                 rouleur = int(choix.rouleur)
@@ -800,15 +834,15 @@ def principal(nb_humains=1):
     tâches = list()
     for i in range(1, nb_humains):
         tâche = threading.Thread(
-            target=lambda j,c: j.append(Humain(c, ServeurConsole())),
-            args=(joueurs,couleurs[i]))
+            target=lambda j, c: j.append(Humain(c, ServeurConsole())),
+            args=(joueurs, couleurs[i]))
         tâche.start()
         tâches.append(tâche)
     for tâche in tâches:
         tâche.join()
-    for i in range(nb_humains, min(4, nb_humains+1)):
+    for i in range(nb_humains, min(4, nb_humains + 1)):
         joueurs.append(Robourrin(couleurs[i]))
-    for i in range(min(4, nb_humains+1),4):
+    for i in range(min(4, nb_humains + 1), 4):
         joueurs.append(Robot(couleurs[i]))
     random.shuffle(joueurs)
     tracé = Tracé()
@@ -845,13 +879,14 @@ def principal(nb_humains=1):
 
         for joueur in joueurs:
             if joueur not in paires and (joueur not in tâches
-                    or not tâches[joueur].is_alive()):
+                                         or not tâches[joueur].is_alive()):
                 tâches[joueur] = threading.Thread(
-                        target=lambda t,j,p: p.update([(j, j.jouer(t))]),
-                        args=(tracé,joueur,paires))
+                    target=lambda t, j, p: p.update([(j, j.jouer(t))]),
+                    args=(tracé, joueur, paires))
                 tâches[joueur].start()
 
-        attendre_couleurs_precedentes = list(map(lambda j:j.couleur.name, joueurs))
+        attendre_couleurs_precedentes = list(
+            map(lambda j: j.couleur.name, joueurs))
         while True:
             time.sleep(1)
             attendre_couleurs = list()
@@ -862,7 +897,7 @@ def principal(nb_humains=1):
                 break
             else:
                 if len([c for c in attendre_couleurs_precedentes
-                    if c not in attendre_couleurs]):
+                        if c not in attendre_couleurs]):
                     for joueur in paires.keys():
                         joueur.client.attente(attendre_couleurs)
                     attendre_couleurs_precedentes = list(attendre_couleurs)
@@ -884,6 +919,7 @@ def principal(nb_humains=1):
         joueur.client.afficher(tracé)
         joueur.client.ordre(tracé.ordre())
 
+
 def client_console(adresse, port):
     client = ClientConsole(adresse, port)
     client.jouer()
@@ -902,5 +938,5 @@ if __name__ == "__main__":
     else:
         nb_humains = 1
         if len(sys.argv) > 2 and sys.argv[1] == '-h':
-            nb_humains = min(4,max(1,int(sys.argv[2])))
+            nb_humains = min(4, max(1, int(sys.argv[2])))
         principal(nb_humains)
