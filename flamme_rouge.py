@@ -219,11 +219,21 @@ class Robourrin(Joueur):
         return Paire(sprinteur, rouleur)
 
 
+class Pente(enum.Enum):
+    """Pente perçue dans le sens de la marche
+    """
+
+    plat = 0
+    col = 1
+    descente = 2
+
+
 class Case:
 
-    def __init__(self):
+    def __init__(self, pente):
         self.droite = None
         self.gauche = None
+        self.pente = pente
 
     def est_vide(self):
         return (self.droite is None and
@@ -268,7 +278,14 @@ class Tracé:
     def __init__(self):
         self.cases = list()
         for i in range(self.arrivée + 9):
-            self.cases.append(Case())
+            case = Case(Pente.plat)
+            if 20 <= i < 23:
+                case = Case(Pente.col)
+            elif 23 <= i < 26:
+                case = Case(Pente.descente)
+            elif 68 <= i < 73:
+                case = Case(Pente.col)
+            self.cases.append(case)
         self.positions = dict()
 
     @property
@@ -304,11 +321,17 @@ class Tracé:
             garde = 1 + max(self.positions.values(), default=len(self.cases))
 
         # Ligne supérieure
-        ligne = str()
+        segments = [""]
         for i in range(début, garde):
-            ligne += "+----"
-        ligne += "+"
-        print(ligne)
+            case = self.cases[i]
+            if case.pente == Pente.plat:
+                segments.append("----")
+            elif case.pente == Pente.col:
+                segments.append("<<<<")
+            else:  # case.pente == Pente.descente
+                segments.append(">>>>")
+        segments.append("")
+        print("+".join(segments))
 
         # Côté gauche
         ligne = str()
@@ -362,11 +385,17 @@ class Tracé:
         print(ligne)
 
         # Ligne inférieure
-        ligne = str()
+        segments = [""]
         for i in range(début, garde):
-            ligne += "+===="
-        ligne += "+"
-        print(ligne)
+            case = self.cases[i]
+            if case.pente == Pente.plat:
+                segments.append("====")
+            elif case.pente == Pente.col:
+                segments.append("<<<<")
+            else:  # case.pente == Pente.descente
+                segments.append(">>>>")
+        segments.append("")
+        print("+".join(segments))
 
         # Numéro de case
         ligne = str()
@@ -381,6 +410,58 @@ class Tracé:
             ligne += "|"
         print(ligne)
 
+        # Changement de pente
+        for i in range(garde, len(self.cases)):
+            if self.cases[garde - 1].pente != self.cases[i].pente:
+                if self.cases[i].pente == Pente.col:
+                    print("Prochain col au point {}".format(self.arrivée - i))
+                elif self.cases[i].pente == Pente.plat:
+                    print("Retour au plat au point {}".format(
+                        self.arrivée - i))
+                else:
+                    print("Prochaine descente au point {}".format(
+                        self.arrivée - i))
+                break
+
+    def déplacer(self, paires):
+        """Applique, du coureur en tête à la voiture-balai, les déplacements
+        """
+        for i in reversed(range(min(self.positions.values()),
+                                1 + max(self.positions.values()))):
+            case = self.cases[i]
+            # Le pion droit d'abord
+            pion = case.droite
+            if pion is not None:
+                paire = paires[pion.joueur]
+                énergie = paire.rouleur
+                if pion.profil == Profil.sprinteur:
+                    énergie = paire.sprinteur
+                self._déplacer_pion(pion, énergie)
+            # ...puis le pion gauche
+            pion = case.gauche
+            if pion is not None:
+                paire = paires[pion.joueur]
+                énergie = paire.rouleur
+                if pion.profil == Profil.sprinteur:
+                    énergie = paire.sprinteur
+                self._déplacer_pion(pion, énergie)
+
+    def _déplacer_pion(self, pion, énergie):
+        # Localisation du coureur
+        i = self.positions[pion]
+        self.retirer(pion)
+
+        # Application des règles de déplacement
+        if self.cases[i].pente == Pente.descente:
+            énergie = max(5, énergie)
+
+        for j in range(énergie + 1):
+            if self.cases[i + j].pente == Pente.col:
+                énergie = min(énergie, max(5, j - 1))
+
+        # Déplacement effectif
+        self.poser(pion, i + énergie)
+
     def aspirer(self):
         """Applique l'algorithme d'aspiration
         """
@@ -389,8 +470,10 @@ class Tracé:
         for i in range(min(self.positions.values()) + 1,
                        max(self.positions.values())):
             if (not self.cases[i - 1].est_vide() and
+                    not self.cases[i - 1].pente == Pente.col and
                     self.cases[i].est_vide() and
-                    not self.cases[i + 1].est_vide()):
+                    not self.cases[i + 1].est_vide() and
+                    not self.cases[i + 1].pente == Pente.col):
                 cases_aspiration.append(i)
 
         # Affichage
@@ -400,7 +483,8 @@ class Tracé:
         # Application de l'aspiration
         for i in cases_aspiration:
             j = i - 1
-            while not self.cases[j].est_vide():
+            while not (self.cases[j].est_vide() or
+                       self.cases[j].pente == Pente.col):
                 case = self.cases[j]
                 pion = case.droite
                 self.retirer(pion)
@@ -494,27 +578,7 @@ def principal():
             paires[joueur] = joueur.jouer(tracé)
 
         # Phase de déplacement
-        for i in reversed(range(min(tracé.positions.values()),
-                                1 + max(tracé.positions.values()))):
-            case = tracé.cases[i]
-            # Le pion droit d'abord
-            pion = case.droite
-            if pion is not None:
-                paire = paires[pion.joueur]
-                énergie = paire.rouleur
-                if pion.profil == Profil.sprinteur:
-                    énergie = paire.sprinteur
-                tracé.retirer(pion)
-                tracé.poser(pion, i + énergie)
-            # ...puis le pion gauche
-            pion = case.gauche
-            if pion is not None:
-                paire = paires[pion.joueur]
-                énergie = paire.rouleur
-                if pion.profil == Profil.sprinteur:
-                    énergie = paire.sprinteur
-                tracé.retirer(pion)
-                tracé.poser(pion, i + énergie)
+        tracé.déplacer(paires)
 
         # Phase finale
         tracé.aspirer()
