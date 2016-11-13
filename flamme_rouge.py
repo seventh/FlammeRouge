@@ -49,7 +49,7 @@ import threading
 import time
 
 
-def charger_parcours(chemin):
+def choisir_course(chemin):
     # Lecture du fichier
     parcours = None
     with open(chemin, "rt") as entrée:
@@ -59,7 +59,7 @@ def charger_parcours(chemin):
     for nom_case, case in parcours["cases"].items():
         if not ("angle" in case and
                 "pente" in case):
-            logging.error("Case {} inchoérente".format(nom_case))
+            logging.error("Case {} incohérente".format(nom_case))
 
     for nom_tronçon, tronçon in parcours["tronçons"].items():
         if tronçon is None:
@@ -72,51 +72,75 @@ def charger_parcours(chemin):
                     logging.error(
                         "Case inconnue dans tronçon «{}»".format(nom_tronçon))
 
-    for nom_tracé, tracé in parcours["tracés"].items():
-        for nom_tronçon in tracé:
+    for nom_course, course in parcours["courses"].items():
+        for nom_tronçon in course["tracé"]:
             if nom_tronçon not in parcours["tronçons"]:
                 logging.error(
-                    "Tronçon inconnu dans tracé {}".format(nom_tracé))
+                    "Tronçon inconnu dans la course «{}»".format(nom_course))
             elif parcours["tronçons"][nom_tronçon] is None:
                 logging.error(
-                    "Le tracé «{}» référence le tronçon «{}»".format(
-                        nom_tracé, nom_tronçon))
+                    "Le course «{}» référence le tronçon «{}»".format(
+                        nom_course, nom_tronçon))
+            elif nom_tronçon.swapcase() in course["tracé"]:
+                logging.error(
+                    "Le tronçon «{}» est référencé sous plusieurs formes dans la course «{}»".format(
+                        nom_tronçon, nom_course))
+            elif course["tracé"].count(nom_tronçon) > 1:
+                logging.error(
+                    "Le tronçon «{}» est référencé plusieurs fois dans la course «{}»".format(
+                        nom_tronçon, nom_course))
 
-    # Choix du tracé par le joueur
-    noms = sorted(parcours["tracés"])
-    for i, nom_tracé in enumerate(noms):
-        print("{}) {}".format(i + 1, nom_tracé))
+    # Choix de la course par le joueur
+    noms = sorted(parcours["courses"])
+    for i, nom_course in enumerate(noms):
+        print("{}) {}".format(i + 1, nom_course))
     while True:
         try:
             i = int(input("Choix du parcours ? ")) - 1
             if 0 <= i < len(noms):
-                nom_tracé = noms[i]
+                nom_course = noms[i]
                 break
         except ValueError:
             pass
 
-    # Construction du tracé choisi
+    # Construction de la course choisie
     cases = list()
     départ = None
     arrivée = None
-    tracé = parcours["tracés"][nom_tracé]
-    for nom_tronçon in tracé:
-        for nom_case in parcours["tronçons"][nom_tronçon]:
-            case = parcours["cases"][nom_case]
-            if case["pente"] == 0:
-                cases.append(Case(Pente.plat))
-            elif case["pente"] == 1:
-                cases.append(Case(Pente.col))
-            else:  # case["pente"] == -1
-                cases.append(Case(Pente.descente))
+    course = parcours["courses"][nom_course]
+    nb_tours = course["tours"]
+    tronçons = course["tracé"]
+    for i in range(nb_tours):
+        for nom_tronçon in tronçons:
+            for nom_case in parcours["tronçons"][nom_tronçon]:
+                case = parcours["cases"][nom_case]
+                if case["pente"] == 0:
+                    cases.append(Case(Pente.plat))
+                elif case["pente"] == 1:
+                    cases.append(Case(Pente.col))
+                else:  # case["pente"] == -1
+                    cases.append(Case(Pente.descente))
 
+                if nom_case == "départ":
+                    départ = len(cases)
+                elif nom_case == "arrivée" and arrivée is None:
+                    arrivée = len(cases) - 1
+    if nb_tours > 1:
+        départ = 0
+        t_arrivée = tronçons[-1]
+        for nom_case in parcours["tronçons"][t_arrivée]:
+            if nom_case == "arrivée":
+                cases = [Case(Pente.plat)] + cases
+                départ += 1
+
+        arrivée = len(cases)
+        t_départ = tronçons[0]
+        for nom_case in parcours["tronçons"][t_départ]:
             if nom_case == "départ":
-                départ = len(cases)
-            elif nom_case == "arrivée" and arrivée is None:
-                arrivée = len(cases) - 1
+                cases += [Case(Pente.plat)]
 
     tracé = Tracé(cases, départ, arrivée)
-    return tracé
+    return tracé, nb_tours
 
 
 class Couleur(enum.Enum):
@@ -302,7 +326,7 @@ class Console(Client):
     def demander_positions(self, tracé, libres):
         while True:
             try:
-                sprinteur = int(
+                sprinteur = tracé.départ + int(
                     input("Position du sprinteur {} ? ".format(self.couleur)))
                 if sprinteur in libres:
                     libres.remove(sprinteur)
@@ -312,7 +336,7 @@ class Console(Client):
 
         while True:
             try:
-                rouleur = int(
+                rouleur = tracé.départ + int(
                     input("Position du rouleur {} ? ".format(self.couleur)))
                 if rouleur in libres:
                     libres.remove(rouleur)
@@ -417,7 +441,7 @@ class ClientConsole(Console, ClientServeur):
 
 class Joueur:
 
-    def __init__(self, couleur):
+    def __init__(self, couleur, nb_tours):
         self.couleur = couleur
         self.client = ClientNul()
         self.sprinteur = [2, 2, 2,
@@ -425,11 +449,13 @@ class Joueur:
                           4, 4, 4,
                           5, 5, 5,
                           9, 9, 9]
+        self.sprinteur = nb_tours * self.sprinteur
         self.rouleur = [3, 3, 3,
                         4, 4, 4,
                         5, 5, 5,
                         6, 6, 6,
                         7, 7, 7]
+        self.rouleur = nb_tours * self.rouleur
         self.défausse_sprinteur = []
         self.défausse_rouleur = []
         random.shuffle(self.sprinteur)
@@ -462,8 +488,8 @@ class Joueur:
 
 class Humain(Joueur):
 
-    def __init__(self, couleur, client):
-        Joueur.__init__(self, couleur)
+    def __init__(self, couleur, nb_tours, client):
+        super().__init__(couleur, nb_tours)
         self.client = client
 
     def placer(self, tracé):
@@ -746,9 +772,9 @@ class Tracé:
         ligne = str()
         for i in range(début, garde):
             if i == self.départ or i == self.arrivée:
-                ligne += "‖ {:>2} ".format(i)
+                ligne += "‖{: <4}".format(i - self.départ)
             else:
-                ligne += "| {:>2} ".format(i)
+                ligne += "|{: <4}".format(i - self.départ)
         if garde == self.départ or garde == self.arrivée:
             ligne += "‖"
         else:
@@ -759,9 +785,10 @@ class Tracé:
         for i in range(garde, len(self.cases)):
             ligne = None
             if i == self.arrivée:
-                ligne = " Arrivée au km {}".format(i)
+                ligne = " Arrivée au km {}".format(i - self.départ)
             elif self.cases[garde - 1].pente != self.cases[i].pente:
-                ligne = " Prochain point d'étape au km {} : ".format(i)
+                ligne = " Prochain point d'étape au km {} : ".format(
+                    i - self.départ)
                 j = i + 1
                 while (j < self.arrivée and
                        self.cases[j].pente == self.cases[i].pente):
@@ -910,27 +937,29 @@ class Tracé:
 
 
 def principal(nb_humains):
+    tracé, nb_tours = choisir_course("courses.json")
+
     couleurs = [Couleur.gris, Couleur.bleu, Couleur.noir, Couleur.vert]
     joueurs = list()
-    joueurs.append(Humain(couleurs[0], Console()))
+    joueurs.append(Humain(couleurs[0], nb_tours, Console()))
     tâches = list()
     for i in range(1, nb_humains):
         tâche = threading.Thread(
-            target=lambda j, c: j.append(Humain(c, ServeurConsole())),
+            target=lambda j, c: j.append(
+                Humain(c, nb_tours, ServeurConsole())),
             args=(joueurs, couleurs[i]))
         tâche.start()
         tâches.append(tâche)
     for tâche in tâches:
         tâche.join()
     for i in range(nb_humains, min(4, nb_humains + 1)):
-        joueurs.append(Robourrin(couleurs[i]))
+        joueurs.append(Robourrin(couleurs[i], nb_tours))
     for i in range(min(4, nb_humains + 1), 4):
-        joueurs.append(Robot(couleurs[i]))
+        joueurs.append(Robot(couleurs[i], nb_tours))
     random.shuffle(joueurs)
-    tracé = charger_parcours("parcours.json")
-
     for joueur in joueurs:
         joueur.client.couleur(joueur.couleur)
+
     # Placement initial
     joueurs[0].client.afficher(tracé, 0, tracé.départ)
     for joueur in joueurs:

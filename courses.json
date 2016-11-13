@@ -113,13 +113,34 @@
       "t": ["virage_gauche", "virage_gauche"],
       "u": ["plat", "arrivée", "arrivée", "arrivée", "arrivée", "arrivée"]
   },
-    "tracés": {
-        "Avenue Corso Paseo": "abcdefghijklmnopqrstu",
-        "Florence - Milan": "abcdgiDHqntmKOLrepJsfu",
-        "La classicissima": "AebQRNHPcgikDFsLojmtu",
-        "La doublette" : "akoclERQNPHBTIsFgjmu",
-        "La haute montagne": "abcfimetKGLHJsdopRQNU",
-        "Plateaux de Wallonie": "AbJiLcGHtdfpkmnrqEoSu",
-        "Ronde van Wevelgem": "abcmgfteqonLPjkIDHrSu"
+  "courses": {
+    "Avenue Corso Paseo": {
+      "tours": 1,
+      "tracé": "abcdefghijklmnopqrstu"
+    },
+    "Florence - Milan": {
+      "tours": 1,
+      "tracé": "abcgiDHqntmKOLrepJsfu"
+    },
+    "La classicissima": {
+      "tours": 1,
+      "tracé": "AebQRNHPcgikDFsLojmtu"
+    },
+    "La doublette": {
+      "tours": 2,
+      "tracé": "akoclERQNPHBTIsFgjmu"
+    },
+    "La haute montagne": {
+      "tours": 1,
+      "tracé": "abcfimetKGLHJsdopRQNU"
+    },
+    "Plateaux de Wallonie": {
+      "tours": 1,
+      "tracé": "AbJiLcGHtdfpkmnrqEoSu"
+    },
+    "Ronde van Wevelgem": {
+      "tours": 1,
+      "tracé": "abcmgfteqonLPjkIDHrSu"
     }
+  }
 }
