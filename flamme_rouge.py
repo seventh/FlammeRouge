@@ -422,18 +422,16 @@ class Joueur:
     def __init__(self, couleur):
         self.couleur = couleur
         self.client = ClientNul()
-        self.sprinteur = [2, 2, 2, 3]
-        # self.sprinteur = [2, 2, 2,
-        #                  3, 3, 3,
-        #                  4, 4, 4,
-        #                  5, 5, 5,
-        #                  9, 9, 9]
-        self.rouleur = [3, 3, 3, 4]
-        # self.rouleur = [3, 3, 3,
-        #                4, 4, 4,
-        #                5, 5, 5,
-        #                6, 6, 6,
-        #                7, 7, 7]
+        self.sprinteur = [2, 2, 2,
+                          3, 3, 3,
+                          4, 4, 4,
+                          5, 5, 5,
+                          9, 9, 9]
+        self.rouleur = [3, 3, 3,
+                        4, 4, 4,
+                        5, 5, 5,
+                        6, 6, 6,
+                        7, 7, 7]
         self.défausse_sprinteur = []
         self.défausse_rouleur = []
         random.shuffle(self.sprinteur)
