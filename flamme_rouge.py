@@ -670,7 +670,7 @@ class Tracé:
         for i in range(début, garde):
             case = self.cases[i]
             if case.pente == Pente.plat:
-                segments.append("----")
+                segments.append("~~~~")
             elif case.pente == Pente.col:
                 segments.append("<<<<")
             else:  # case.pente == Pente.descente
@@ -703,7 +703,7 @@ class Tracé:
         # Ligne médiane
         ligne = str()
         for i in range(début, garde):
-            ligne += "+~~~~"
+            ligne += "+----"
         ligne += "+"
         print(ligne)
 
@@ -763,16 +763,16 @@ class Tracé:
             elif self.cases[garde - 1].pente != self.cases[i].pente:
                 ligne = " Prochain point d'étape au km {} : ".format(i)
                 j = i + 1
-                while (j < len(self.cases) and
+                while (j < self.arrivée and
                        self.cases[j].pente == self.cases[i].pente):
                     j += 1
                 if self.cases[i].pente == Pente.col:
-                    ligne += "col"
+                    ligne += "ascension"
                 elif self.cases[i].pente == Pente.plat:
-                    ligne += "retour au plat"
+                    ligne += "plaine"
                 else:  # self.cases[i].pente == Pente.descente
                     ligne += "descente"
-                ligne += " sur {} km".format(j - i)
+                ligne += " de {} km".format(j - i)
 
             if ligne is not None:
                 print(ligne)
