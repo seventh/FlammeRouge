@@ -302,9 +302,8 @@ class Console(Client):
     def demander_positions(self, tracé, libres):
         while True:
             try:
-                sprinteur = (tracé.arrivée -
-                             int(input("Position du sprinteur {} ? ".format(
-                                 self.couleur))))
+                sprinteur = int(
+                    input("Position du sprinteur {} ? ".format(self.couleur)))
                 if sprinteur in libres:
                     libres.remove(sprinteur)
                     break
@@ -313,9 +312,8 @@ class Console(Client):
 
         while True:
             try:
-                rouleur = (tracé.arrivée -
-                           int(input("Position du rouleur {} ? ".format(
-                               self.couleur))))
+                rouleur = int(
+                    input("Position du rouleur {} ? ".format(self.couleur)))
                 if rouleur in libres:
                     libres.remove(rouleur)
                     break
@@ -356,7 +354,7 @@ class Console(Client):
 
     def ordre(self, couleurs):
         for i in range(len(couleurs)):
-            ligne = "Équipe n°{} : {}".format(i + 1, couleurs[i].name)
+            ligne = "N°{} : équipe {}e".format(i + 1, couleurs[i].name)
             if couleurs[i].name == self.couleur:
                 ligne += " <---"
             print(ligne)
@@ -748,9 +746,9 @@ class Tracé:
         ligne = str()
         for i in range(début, garde):
             if i == self.départ or i == self.arrivée:
-                ligne += "‖ {:>2} ".format(self.arrivée - i)
+                ligne += "‖ {:>2} ".format(i)
             else:
-                ligne += "| {:>2} ".format(self.arrivée - i)
+                ligne += "| {:>2} ".format(i)
         if garde == self.départ or garde == self.arrivée:
             ligne += "‖"
         else:
@@ -759,15 +757,25 @@ class Tracé:
 
         # Changement de pente
         for i in range(garde, len(self.cases)):
-            if self.cases[garde - 1].pente != self.cases[i].pente:
+            ligne = None
+            if i == self.arrivée:
+                ligne = " Arrivée au km {}".format(i)
+            elif self.cases[garde - 1].pente != self.cases[i].pente:
+                ligne = " Prochain point d'étape au km {} : ".format(i)
+                j = i + 1
+                while (j < len(self.cases) and
+                       self.cases[j].pente == self.cases[i].pente):
+                    j += 1
                 if self.cases[i].pente == Pente.col:
-                    print("Prochain col au point {}".format(self.arrivée - i))
+                    ligne += "col"
                 elif self.cases[i].pente == Pente.plat:
-                    print("Retour au plat au point {}".format(
-                        self.arrivée - i))
-                else:
-                    print("Prochaine descente au point {}".format(
-                        self.arrivée - i))
+                    ligne += "retour au plat"
+                else:  # self.cases[i].pente == Pente.descente
+                    ligne += "descente"
+                ligne += " sur {} km".format(j - i)
+
+            if ligne is not None:
+                print(ligne)
                 break
 
     def déplacer(self, paires):
