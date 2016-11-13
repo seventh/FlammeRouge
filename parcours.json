@@ -1,0 +1,125 @@
+{
+  "cases": {
+    "arrivée": {
+      "angle": 0,
+      "pente": 0
+    },
+    "col": {
+      "angle": 0,
+      "pente": 1
+    },
+    "descente": {
+      "angle": 0,
+      "pente": -1
+    },
+    "descente_raidillon_droite": {
+      "angle": -1,
+      "pente": -1
+    },
+    "descente_raidillon_gauche": {
+      "angle": 1,
+      "pente": 1
+    },
+    "descente_épingle_droite": {
+      "angle": -2,
+      "pente": -1
+    },
+    "descente_épingle_gauche": {
+      "angle": 2,
+      "pente": -1
+    },
+    "droite_sec": {
+      "angle": -2,
+      "pente": 0
+    },
+    "départ": {
+      "angle": 0,
+      "pente": 0
+    },
+    "gauche_sec": {
+      "angle": 2,
+      "pente": 0
+    },
+    "plat": {
+      "angle": 0,
+      "pente": 0
+    },
+    "raidillon_droite": {
+      "angle": -1,
+      "pente": 1
+    },
+    "raidillon_gauche": {
+      "angle": 1,
+      "pente": 1
+    },
+    "virage_droite": {
+      "angle": -1,
+      "pente": 0
+    },
+    "virage_gauche": {
+      "angle": 1,
+      "pente": 0
+    },
+    "épingle_droite": {
+      "angle": -2,
+      "pente": 1
+    },
+    "épingle_gauche": {
+      "angle": 2,
+      "pente": 1
+    }
+  },
+  "tronçons": {
+      "A": ["départ", "départ", "départ", "départ", "plat", "plat"],
+      "B": ["descente", "descente", "descente", "descente", "plat", "plat"],
+      "C": null,
+      "D": ["col", "col", "col", "col", "col", "descente"],
+      "E": ["épingle_droite", "épingle_droite"],
+      "F": ["descente", "descente", "descente", "plat", "plat", "plat"],
+      "G": ["épingle_gauche", "épingle_gauche"],
+      "H": ["descente_raidillon_droite", "descente_raidillon_droite"],
+      "I": ["droite_sec", "droite_sec"],
+      "J": ["gauche_sec", "gauche_sec"],
+      "K": ["raidillon_gauche", "raidillon_gauche"],
+      "L": ["col", "col", "col", "descente", "descente", "descente"],
+      "M": null,
+      "N": ["col", "col", "col", "col", "col", "col"],
+      "O": ["épingle_gauche", "épingle_gauche"],
+      "P": ["descente_épingle_gauche", "descente_épingle_gauche"],
+      "Q": ["raidillon_droite", "raidillon_droite"],
+      "R": ["raidillon_gauche", "raidillon_gauche"],
+      "S": ["virage_gauche", "virage_gauche"],
+      "T": ["virage_droite", "virage_droite"],
+      "U": ["col", "col", "arrivée", "arrivée", "arrivée", "arrivée"],
+      "a": ["départ", "départ", "départ", "départ", "départ", "plat"],
+      "b": ["plat", "plat", "plat", "plat", "plat", "plat"],
+      "c": ["plat", "plat", "plat", "plat", "plat", "plat"],
+      "d": ["plat", "plat", "plat", "plat", "plat", "plat"],
+      "e": ["gauche_sec", "gauche_sec"],
+      "f": ["plat", "plat", "plat", "plat", "plat", "plat"],
+      "g": ["gauche_sec", "gauche_sec"],
+      "h": ["virage_gauche", "virage_gauche"],
+      "i": ["gauche_sec", "gauche_sec"],
+      "j": ["droite_sec", "droite_sec"],
+      "k": ["virage_droite", "virage_droite"],
+      "l": ["plat", "plat", "plat", "plat", "plat", "plat"],
+      "m": ["plat", "plat", "plat", "plat", "plat", "plat"],
+      "n": ["plat", "plat", "plat", "plat", "plat", "plat"],
+      "o": ["droite_sec", "droite_sec"],
+      "p": ["droite_sec", "droite_sec"],
+      "q": ["virage_gauche", "virage_gauche"],
+      "r": ["virage_droite", "virage_droite"],
+      "s": ["virage_droite", "virage_droite"],
+      "t": ["virage_gauche", "virage_gauche"],
+      "u": ["plat", "arrivée", "arrivée", "arrivée", "arrivée", "arrivée"]
+  },
+    "tracés": {
+        "Avenue Corso Paseo": "abcdefghijklmnopqrstu",
+        "Florence - Milan": "abcdgiDHqntmKOLrepJsfu",
+        "La classicissima": "AebQRNHPcgikDFsLojmtu",
+        "La doublette" : "akoclERQNPHBTIsFgjmu",
+        "La haute montagne": "abcfimetKGLHJsdopRQNU",
+        "Plateaux de Wallonie": "AbJiLcGHtdfpkmnrqEoSu",
+        "Ronde van Wevelgem": "abcmgfteqonLPjkIDHrSu"
+    }
+}
