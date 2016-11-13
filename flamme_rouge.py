@@ -453,6 +453,8 @@ class Joueur:
             random.shuffle(défausse)
             tas.extend(défausse)
             défausse.clear()
+        if len(tas) == 0:
+            tas.append(2)
 
         retour = tas[:4]
         tas[:] = tas[4:]
@@ -502,9 +504,7 @@ class Humain(Joueur):
             try:
                 sprinteur = int(choix.sprinteur)
                 rouleur = int(choix.rouleur)
-                print(len(énergies_sprinteur))
                 énergies_sprinteur.remove(sprinteur)
-                print(len(énergies_sprinteur))
                 énergies_rouleur.remove(rouleur)
             except ValueError:
                 pass
@@ -901,7 +901,7 @@ class Tracé:
         return couleurs
 
 
-def principal(nb_humains=1):
+def principal(nb_humains):
     couleurs = [Couleur.gris, Couleur.bleu, Couleur.noir, Couleur.vert]
     joueurs = list()
     joueurs.append(Humain(couleurs[0], Console()))
