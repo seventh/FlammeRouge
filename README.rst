@@ -19,14 +19,30 @@ You'll need a running `Python 3`_ interpreter.
 Command line arguments
 ----------------------
 
--c [address] port     Launch as client, connecting to server at specified adress and port
--h nb_humans          Launch as server, specifies number of humans players (including playing on the server command line)
+-c port            Launch as client, connecting to server at specified port.
+                   If required, a network address may be prepended.
+-h nb_humans       Launch as server, specifies number of humans players
+                   (including playing on the server command line).
 
 How to play
 -----------
 
 You are the **grey** (gris) player. Your team competes against three other
 ones: the blue (bleu) one, the green (vert) one and the black (noir) one.
+
+::
+
+    +~~~~+<<<<+<<<<+<<<<+<<<<+<<<<+<<<<+<<<<+>>>>+>>>>+>>>>+>>>>+>>>>+~~~~+
+    | Sn |    |    |    |    |    |    |    |    |    | →→ |    | →→ |    |
+    +----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+    | Sv |    |    | Rn |    |    |    | Sg | Rv | Rg | →→ | Rb | →→ | Sb |
+    +====+<<<<+<<<<+<<<<+<<<<+<<<<+<<<<+<<<<+>>>>+>>>>+>>>>+>>>>+>>>>+====+
+    | 35 | 36 | 37 | 38 | 39 | 40 | 41 | 42 | 43 | 44 | 45 | 46 | 47 | 48 |
+     Prochain point d'étape au km 62 : ascension de 12 km
+    Équipe bleue : fatigue du sprinteur
+    Équipe grise : fatigue du sprinteur <---
+    Équipe noire : fatigue du rouleur et du sprinteur
+    Équipe verte : fatigue du sprinteur
 
 Each team is composed of a Sprinteur and a Rouleur, so that each member of a
 team is shown as a digram. For example, 'Rb' stands for the blue Runner, 'Sg'
