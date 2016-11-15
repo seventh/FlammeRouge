@@ -125,7 +125,10 @@ def choisir_course(chemin):
                     départ = len(cases)
                 elif nom_case == "arrivée" and arrivée is None:
                     arrivée = len(cases) - 1
-    if nb_tours > 1:
+    if nb_tours == 1:
+        lg_circuit = arrivée - départ
+    else:
+        lg_circuit = len(cases) / nb_tours
         départ = 0
         t_arrivée = tronçons[-1]
         for nom_case in parcours["tronçons"][t_arrivée]:
@@ -139,7 +142,7 @@ def choisir_course(chemin):
             if nom_case == "départ":
                 cases += [Case(Pente.plat)]
 
-    tracé = Tracé(cases, départ, arrivée)
+    tracé = Tracé(cases, départ, arrivée, lg_circuit)
     return tracé, nb_tours
 
 
@@ -652,10 +655,11 @@ class Pion(collections.namedtuple("Pion", ["profil", "joueur"])):
 
 class Tracé:
 
-    def __init__(self, cases, départ, arrivée):
+    def __init__(self, cases, départ, arrivée, lg_tour):
         self.cases = cases
         self._départ = départ
         self._arrivée = arrivée
+        self._lg_tour = lg_tour
 
         self.positions = dict()
 
@@ -670,6 +674,18 @@ class Tracé:
         """Indice de la dernière case de course
         """
         return self._arrivée
+
+    @property
+    def lg_tour(self):
+        """Nombre de cases dans un tour
+        """
+        return self._lg_tour
+
+    def est_flamme(self, indice):
+        retour = (indice == self.départ or
+                  indice == self.arrivée or
+                  (indice - self.départ) % self.lg_tour == 0)
+        return retour
 
     def poser(self, pion, ligne):
         """Placement des pions sur la ligne de départ
@@ -707,7 +723,7 @@ class Tracé:
         # Côté gauche
         ligne = str()
         for i in range(début, garde):
-            if i == self.départ or i == self.arrivée:
+            if self.est_flamme(i):
                 ligne += "‖ "
             else:
                 ligne += "| "
@@ -720,7 +736,7 @@ class Tracé:
                 else:
                     ligne += str(pion)
             ligne += " "
-        if garde == self.départ or garde == self.arrivée:
+        if self.est_flamme(garde):
             ligne += "‖"
         else:
             ligne += "|"
@@ -736,7 +752,7 @@ class Tracé:
         # Côté droit
         ligne = str()
         for i in range(début, garde):
-            if i == self.départ or i == self.arrivée:
+            if self.est_flamme(i):
                 ligne += "‖ "
             else:
                 ligne += "| "
@@ -749,7 +765,7 @@ class Tracé:
                 else:
                     ligne += str(pion)
             ligne += " "
-        if garde == self.départ or garde == self.arrivée:
+        if self.est_flamme(garde):
             ligne += "‖"
         else:
             ligne += "|"
@@ -771,11 +787,11 @@ class Tracé:
         # Numéro de case
         ligne = str()
         for i in range(début, garde):
-            if i == self.départ or i == self.arrivée:
+            if self.est_flamme(i):
                 ligne += "‖{: <4}".format(i - self.départ)
             else:
                 ligne += "|{: <4}".format(i - self.départ)
-        if garde == self.départ or garde == self.arrivée:
+        if self.est_flamme(garde):
             ligne += "‖"
         else:
             ligne += "|"
