@@ -48,7 +48,7 @@ Each team is composed of a Sprinteur and a Rouleur, so that each member of a
 team is shown as a digram. For example, 'Rb' stands for the blue Runner, 'Sg'
 for the grey Sprinter, and so on.
 
-The first team to reach the 73rd block ends the race!
+The first team to reach the finish line end the race!
 
 For more information, read the `rules`_ of the board game.
 

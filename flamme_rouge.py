@@ -575,6 +575,62 @@ class Robot(Joueur):
         return Paire(sprinteur, rouleur)
 
 
+class Robomou(Robot):
+
+    def jouer(self, tracé):
+        énergies_sprinteur = self._piocher(
+            self.sprinteur, self.défausse_sprinteur)
+        énergies_rouleur = self._piocher(self.rouleur, self.défausse_rouleur)
+
+        # On a beau jouer au pif, on évite de trop fatiguer
+        index_sprinteur = tracé.positions[Pion(Profil.sprinteur, self)]
+        index_rouleur = tracé.positions[Pion(Profil.rouleur, self)]
+
+        if tracé.cases[index_sprinteur].pente == Pente.descente:
+            sprinteur = min(énergies_sprinteur)
+        else:
+            for d in range(1, 10):
+                if tracé.cases[index_sprinteur + d].pente == Pente.col:
+                    if d <= 5:
+                        max_sprinteur = 5
+                    else:
+                        max_sprinteur = d - 1
+
+                    és = [é for é in énergies_sprinteur if é <= max_sprinteur]
+                    if len(és) == 0:
+                        és = [min(énergies_sprinteur)]
+                    break
+            else:
+                és = énergies_sprinteur
+            sprinteur = random.sample(és, 1)[0]
+
+        if tracé.cases[index_rouleur].pente == Pente.descente:
+            rouleur = min(énergies_rouleur)
+        else:
+            for d in range(1, 10):
+                if tracé.cases[index_rouleur + d].pente == Pente.col:
+                    if d <= 5:
+                        max_rouleur = 5
+                    else:
+                        max_rouleur = d - 1
+
+                    és = [é for é in énergies_rouleur if é <= max_rouleur]
+                    if len(és) == 0:
+                        és = [min(énergies_rouleur)]
+                    break
+            else:
+                és = énergies_rouleur
+            rouleur = random.sample(és, 1)[0]
+
+        énergies_sprinteur.remove(sprinteur)
+        énergies_rouleur.remove(rouleur)
+
+        self.défausse_sprinteur.extend(énergies_sprinteur)
+        self.défausse_rouleur.extend(énergies_rouleur)
+
+        return Paire(sprinteur, rouleur)
+
+
 class Robourrin(Joueur):
     """Robot qui joue tout ce qu'il a de plus fort
     """
@@ -968,10 +1024,9 @@ def principal(nb_humains):
         tâches.append(tâche)
     for tâche in tâches:
         tâche.join()
-    for i in range(nb_humains, min(4, nb_humains + 1)):
-        joueurs.append(Robourrin(couleurs[i], nb_tours))
-    for i in range(min(4, nb_humains + 1), 4):
-        joueurs.append(Robot(couleurs[i], nb_tours))
+    for i in range(nb_humains, 4):
+        genre = random.sample([Robot, Robourrin, Robomou], 1)[0]
+        joueurs.append(genre(couleurs[i], nb_tours))
     random.shuffle(joueurs)
     for joueur in joueurs:
         joueur.client.couleur(joueur.couleur)
