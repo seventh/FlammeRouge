@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright ou © ou Copr. Guillaume Lemaître (2016)
+# Copyright ou © ou Copr. Guillaume Lemaître (2016, 2017)
 #
 #   guillaume.lemaitre@gmail.com
 #
@@ -41,12 +41,7 @@ import collections
 import enum
 import json
 import logging
-import pickle
 import random
-import socket
-import sys
-import threading
-import time
 
 
 def choisir_course(chemin):
@@ -157,296 +152,10 @@ class Couleur(enum.Enum):
 Paire = collections.namedtuple("Paire", ["sprinteur", "rouleur"])
 
 
-class ClientServeur:
-
-    def send(self, socket_tx, msg):
-        socket_tx.send('{}:'.format(len(msg)).encode('utf-8'))
-        socket_tx.send(msg)
-        return socket_tx
-
-    def recv(self, socket_rx):
-        longueur = 0
-        while True:
-            message = socket_rx.recv(1).decode('utf-8')
-            if message == ':' or message < '0' or message > '9':
-                break
-            longueur = longueur * 10 + int(message)
-
-        fragments = []
-        while longueur > 0:
-            fragment = socket_rx.recv(longueur)
-            fragments.append(fragment)
-            longueur -= len(fragment)
-
-        return b''.join(fragments)
-
-
-class Client:
-
-    def __getstate__(self):
-        None
-
-    def afficher(self, tracé, début=None, garde=None, aspiration=list()):
-        raise NotImplementedError
-
-    def afficher_fatigue(self, tracé, fatigués):
-        raise NotImplementedError
-
-    def demander_positions(self, tracé, libres):
-        raise NotImplementedError
-
-    def demander_jeu(self, choix_sprinteur, choix_rouleur):
-        raise NotImplementedError
-
-    def ordre(self, couleurs):
-        raise NotImplementedError
-
-    def attente(self, couleurs):
-        raise NotImplementedError
-
-    def couleur(self, couleur):
-        self.couleur = couleur.name
-
-
-class ClientNul(Client):
-
-    def afficher(self, tracé, début=None, garde=None, aspiration=list()):
-        pass
-
-    def afficher_fatigue(self, tracé, fatigués):
-        pass
-
-    def demander_positions(self, tracé, libres):
-        pass
-
-    def demander_jeu(self, choix_sprinteur, choix_rouleur):
-        pass
-
-    def ordre(self, couleurs):
-        pass
-
-    def attente(self, couleurs):
-        pass
-
-
-class ServeurConsole(Client, ClientServeur):
-
-    def __init__(self):
-        serveur = socket.socket(
-            socket.AF_INET, socket.SOCK_STREAM)
-        serveur.bind((socket.gethostname(), 0))
-        print(serveur.getsockname()[1])
-        serveur.listen(1)
-        self.socket = serveur.accept()[0]
-
-    def afficher(self, tracé, début=None, garde=None, aspiration=list()):
-        message = pickle.dumps({"commande": "afficher",
-                                "tracé": tracé,
-                                "début": début,
-                                "garde": garde,
-                                "aspiration": aspiration})
-        self.send(self.socket, message)
-
-    def afficher_fatigue(self, tracé, fatigués):
-        message = pickle.dumps(
-            {"commande": "afficher_fatigue",
-             "tracé": tracé,
-             "fatigués": fatigués})
-        self.send(self.socket, message)
-
-    def demander_positions(self, tracé, libres):
-        message = pickle.dumps(
-            {"commande": "demander_positions",
-             "tracé": tracé,
-             "libres": libres})
-        while True:
-            self.send(self.socket, message)
-            try:
-                réponse = self.recv(self.socket)
-                positions = pickle.loads(réponse)
-                libres_temp = list(libres)
-                sprinteur = positions.sprinteur
-                rouleur = positions.rouleur
-                libres_temp.remove(sprinteur)
-                libres_temp.remove(rouleur)
-                break
-            except ValueError as err:
-                pass
-
-        # message = pickle.dumps({"commande": "position_ok"})
-        # self.send(self.socket, message)
-
-        return Paire(sprinteur, rouleur)
-
-    def demander_jeu(self, énergies_sprinteur, énergies_rouleur):
-        message = pickle.dumps({"commande": "demander_jeu",
-                                "énergies_sprinteur": énergies_sprinteur,
-                                "énergies_rouleur": énergies_rouleur})
-        while True:
-            self.send(self.socket, message)
-            try:
-                réponse = self.recv(self.socket)
-                énergies = pickle.loads(réponse)
-                sprinteur = énergies.sprinteur
-                rouleur = énergies.rouleur
-                énergies_sprinteur_temp = list(énergies_sprinteur)
-                énergies_sprinteur_temp.remove(sprinteur)
-                énergies_rouleur_temp = list(énergies_rouleur)
-                énergies_rouleur_temp.remove(rouleur)
-                break
-            except ValueError:
-                pass
-
-        # message = pickle.dumps({"commande": "jeu_ok"})
-        # self.send(self.socket, message)
-
-        return Paire(sprinteur, rouleur)
-
-    def ordre(self, couleurs):
-        message = pickle.dumps({"commande": "ordre", "couleurs": couleurs})
-        self.send(self.socket, message)
-
-    def attente(self, couleurs):
-        message = pickle.dumps({"commande": "attente", "couleurs": couleurs})
-        self.send(self.socket, message)
-
-    def couleur(self, couleur):
-        message = pickle.dumps({"commande": "couleur", "couleur": couleur})
-        self.send(self.socket, message)
-
-
-class Console(Client):
-
-    def afficher(self, tracé, début=None, garde=None, aspiration=list()):
-        if début is None:
-            print("\n")
-
-        tracé.afficher(début, garde, aspiration)
-
-    def afficher_fatigue(self, tracé, fatigués):
-        tracé.afficher_fatigue(fatigués, self.couleur)
-
-    def demander_positions(self, tracé, libres):
-        while True:
-            try:
-                sprinteur = tracé.départ + int(
-                    input("Position du sprinteur {} ? ".format(self.couleur)))
-                if sprinteur in libres:
-                    libres.remove(sprinteur)
-                    break
-            except ValueError:
-                pass
-
-        while True:
-            try:
-                rouleur = tracé.départ + int(
-                    input("Position du rouleur {} ? ".format(self.couleur)))
-                if rouleur in libres:
-                    libres.remove(rouleur)
-                    break
-            except ValueError:
-                pass
-
-        return Paire(sprinteur, rouleur)
-
-    def demander_jeu(self, énergies_sprinteur, énergies_rouleur):
-        print("Choix du sprinteur : {}".format(
-            ", ".join(map(str, énergies_sprinteur))))
-        print("Choix du rouleur : {}".format(
-            ", ".join(map(str, énergies_rouleur))))
-
-        while True:
-            try:
-                sprinteur = int(
-                    input(
-                        "Énergie du sprinteur {} ? ".format(
-                            self.couleur)))
-                énergies_sprinteur.remove(sprinteur)
-                break
-            except ValueError:
-                pass
-
-        while True:
-            try:
-                rouleur = int(
-                    input(
-                        "Énergie du rouleur {} ? ".format(
-                            self.couleur)))
-                énergies_rouleur.remove(rouleur)
-                break
-            except ValueError:
-                pass
-
-        return Paire(sprinteur, rouleur)
-
-    def ordre(self, couleurs):
-        for i in range(len(couleurs)):
-            ligne = "N°{} : équipe {}e".format(i + 1, couleurs[i].name)
-            if couleurs[i].name == self.couleur:
-                ligne += " <---"
-            print(ligne)
-
-    def attente(self, couleurs):
-        print("Attente joueur{} : {}".format(
-            "s" if len(couleurs) > 1 else "",
-            ", ".join(couleurs)))
-
-    def couleur(self, couleur):
-        self.couleur = couleur.name
-        print("Vous êtes le joueur {}".format(couleur.name))
-
-
-class ClientConsole(Console, ClientServeur):
-
-    def __init__(self, adresse, port):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((adresse, port))
-
-    def jouer(self):
-        while True:
-            try:
-                message = self.recv(self.socket)
-                msg = pickle.loads(message)
-                if msg['commande'] == "afficher":
-                    Console.afficher(
-                        self,
-                        msg['tracé'],
-                        msg['début'],
-                        msg['garde'],
-                        msg['aspiration'])
-                elif msg['commande'] == "afficher_fatigue":
-                    Console.afficher_fatigue(
-                        self, msg['tracé'], msg['fatigués'])
-                elif msg['commande'] == "demander_positions":
-                    positions = Console.demander_positions(
-                        self, msg['tracé'], msg['libres'])
-                    réponse = pickle.dumps(positions)
-                    self.socket = self.send(self.socket, réponse)
-                elif msg['commande'] == "demander_jeu":
-                    énergies = Console.demander_jeu(
-                        self, msg['énergies_sprinteur'],
-                        msg['énergies_rouleur'])
-                    réponse = pickle.dumps(énergies)
-                    self.socket = self.send(self.socket, réponse)
-                elif msg['commande'] == "ordre":
-                    Console.ordre(self, msg['couleurs'])
-                    break
-                elif msg['commande'] == "attente":
-                    Console.attente(self, msg['couleurs'])
-                elif msg['commande'] == "couleur":
-                    Console.couleur(self, msg['couleur'])
-            except ValueError as err:
-                print(err)
-                pass
-
-        self.socket.close()
-
-
 class Joueur:
 
     def __init__(self, couleur, nb_tours):
         self.couleur = couleur
-        self.client = ClientNul()
         self.sprinteur = [2, 2, 2,
                           3, 3, 3,
                           4, 4, 4,
@@ -491,11 +200,9 @@ class Joueur:
 
 class Humain(Joueur):
 
-    def __init__(self, couleur, nb_tours, client):
-        super().__init__(couleur, nb_tours)
-        self.client = client
-
     def placer(self, tracé):
+        tracé.afficher(0, tracé.départ)
+
         libres = list()
         for i in range(tracé.départ):
             case = tracé.cases[i]
@@ -505,42 +212,58 @@ class Humain(Joueur):
                 libres.append(i)
 
         while True:
-            positions = self.client.demander_positions(tracé, libres)
             try:
-                libres_temp = list(libres)
-                sprinteur = int(positions.sprinteur)
-                rouleur = int(positions.rouleur)
-                libres_temp.remove(sprinteur)
-                libres_temp.remove(rouleur)
+                sprinteur = tracé.départ + \
+                    int(input("Position du sprinteur ? "))
+                if sprinteur in libres:
+                    libres.remove(sprinteur)
+                    break
             except ValueError:
                 pass
-            break
 
-        return positions
+        while True:
+            try:
+                rouleur = tracé.départ + int(input("Position du rouleur ? "))
+                if rouleur in libres:
+                    libres.remove(rouleur)
+                    break
+            except ValueError:
+                pass
+
+        return Paire(sprinteur, rouleur)
 
     def jouer(self, tracé):
-        self.client.afficher(tracé)
+        tracé.afficher()
         énergies_sprinteur = sorted(self._piocher(
             self.sprinteur, self.défausse_sprinteur))
         énergies_rouleur = sorted(self._piocher(
             self.rouleur, self.défausse_rouleur))
 
+        print("Choix du sprinteur : {}".format(
+            ", ".join(map(str, énergies_sprinteur))))
+        print("Choix du rouleur : {}".format(
+            ", ".join(map(str, énergies_rouleur))))
+
         while True:
-            choix = self.client.demander_jeu(list(énergies_sprinteur),
-                                             list(énergies_rouleur))
             try:
-                sprinteur = int(choix.sprinteur)
-                rouleur = int(choix.rouleur)
+                sprinteur = int(input("Énergie du sprinteur ? "))
                 énergies_sprinteur.remove(sprinteur)
-                énergies_rouleur.remove(rouleur)
+                break
             except ValueError:
                 pass
-            break
+
+        while True:
+            try:
+                rouleur = int(input("Énergie du rouleur ? "))
+                énergies_rouleur.remove(rouleur)
+                break
+            except ValueError:
+                pass
 
         self.défausse_sprinteur.extend(énergies_sprinteur)
         self.défausse_rouleur.extend(énergies_rouleur)
 
-        return choix
+        return Paire(sprinteur, rouleur)
 
 
 class Robot(Joueur):
@@ -996,8 +719,7 @@ class Tracé:
 
         # Affichage
         if len(cases_aspiration) != 0:
-            for joueur in joueurs:
-                joueur.client.afficher(self, aspiration=cases_aspiration)
+            self.afficher(aspiration=cases_aspiration)
 
         # Application de l'aspiration
         for i in cases_aspiration:
@@ -1048,7 +770,7 @@ class Tracé:
             coureurs = sorted(fatigués[couleur], key=str)
             ligne += " et ".join(["du {}".format(x.profil.name)
                                   for x in coureurs])
-            if couleur.name == couleur_joueur:
+            if couleur == couleur_joueur:
                 ligne += " <---"
             print(ligne)
 
@@ -1069,35 +791,17 @@ class Tracé:
         return couleurs
 
 
-def principal(nb_humains):
+def principal():
     tracé, nb_tours = choisir_course("courses.json")
 
-    couleurs = [Couleur.gris, Couleur.bleu, Couleur.noir, Couleur.vert]
-    joueurs = list()
-    joueurs.append(Humain(couleurs[0], nb_tours, Console()))
-    tâches = list()
-    for i in range(1, nb_humains):
-        tâche = threading.Thread(
-            target=lambda j, c: j.append(
-                Humain(c, nb_tours, ServeurConsole())),
-            args=(joueurs, couleurs[i]))
-        tâche.start()
-        tâches.append(tâche)
-    for tâche in tâches:
-        tâche.join()
-    for i in range(nb_humains, 4):
-        genre = random.sample([Robot, Robourrin, Robomou, Rofinot], 1)[0]
-        joueurs.append(genre(couleurs[i], nb_tours))
+    joueurs = [Humain(Couleur.gris, nb_tours),
+               Robourrin(Couleur.bleu, nb_tours),
+               Rofinot(Couleur.noir, nb_tours),
+               Robomou(Couleur.vert, nb_tours)]
     random.shuffle(joueurs)
-    for joueur in joueurs:
-        joueur.client.couleur(joueur.couleur)
 
     # Placement initial
-    joueurs[0].client.afficher(tracé, 0, tracé.départ)
     for joueur in joueurs:
-        for joueur_en_attente in joueurs:
-            if joueur_en_attente is not joueur:
-                joueur_en_attente.client.attente(list([joueur.couleur.name]))
         paire = joueur.placer(tracé)
         if paire.sprinteur >= paire.rouleur:
             pion = Pion(Profil.sprinteur, joueur)
@@ -1109,42 +813,17 @@ def principal(nb_humains):
             tracé.poser(pion, paire.rouleur)
             pion = Pion(Profil.sprinteur, joueur)
             tracé.poser(pion, paire.sprinteur)
-        for joueur_en_attente in joueurs:
-            joueur_en_attente.client.afficher(tracé, 0, tracé.départ)
 
     # Course !
     fin_de_partie = False
     while not fin_de_partie:
+        print("\n")
 
         # Phase énergie
         paires = dict()
-        tâches = dict()
 
         for joueur in joueurs:
-            if (joueur not in paires and
-                (joueur not in tâches or
-                 not tâches[joueur].is_alive())):
-                tâches[joueur] = threading.Thread(
-                    target=lambda t, j, p: p.update([(j, j.jouer(t))]),
-                    args=(tracé, joueur, paires))
-                tâches[joueur].start()
-
-        attendre_couleurs_precedentes = list(
-            map(lambda j: j.couleur.name, joueurs))
-        while True:
-            time.sleep(1)
-            attendre_couleurs = list()
-            for joueur in joueurs:
-                if joueur not in paires:
-                    attendre_couleurs.append(joueur.couleur.name)
-            if not attendre_couleurs:
-                break
-            else:
-                if len([c for c in attendre_couleurs_precedentes
-                        if c not in attendre_couleurs]):
-                    for joueur in paires.keys():
-                        joueur.client.attente(attendre_couleurs)
-                    attendre_couleurs_precedentes = list(attendre_couleurs)
+            paires[joueur] = joueur.jouer(tracé)
 
         # Phase de déplacement
         tracé.déplacer(paires)
@@ -1152,35 +831,16 @@ def principal(nb_humains):
         # Phase finale
         tracé.aspirer(joueurs)
         fatigués = tracé.fatiguer()
-        for joueur in joueurs:
-            joueur.client.afficher_fatigue(tracé, fatigués)
+        tracé.afficher_fatigue(fatigués, Couleur.gris)
 
         # Détection de la fin de partie
         fin_de_partie = (max(tracé.positions.values()) >= tracé.arrivée)
 
     # Fin de la partie
-    for joueur in joueurs:
-        joueur.client.afficher(tracé)
-        joueur.client.ordre(tracé.ordre())
-
-
-def client_console(adresse, port):
-    client = ClientConsole(adresse, port)
-    client.jouer()
+    tracé.afficher()
+    tracé.ordre()
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING)
-    if len(sys.argv) == 2 or (len(sys.argv) > 2 and sys.argv[1] == '-c'):
-        if len(sys.argv) == 3:
-            client_console(socket.gethostname(), int(sys.argv[2]))
-        elif len(sys.argv) == 4:
-            client_console(sys.argv[2], int(sys.argv[3]))
-        else:
-            client_console(socket.gethostname(), int(sys.argv[1]))
-
-    else:
-        nb_humains = 1
-        if len(sys.argv) > 2 and sys.argv[1] == '-h':
-            nb_humains = min(4, max(1, int(sys.argv[2])))
-        principal(nb_humains)
+    principal()
