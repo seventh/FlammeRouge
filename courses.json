@@ -72,7 +72,7 @@
   "tronçons": {
       "A": ["départ", "départ", "départ", "départ", "plat", "plat"],
       "B": ["descente", "descente", "descente", "descente", "plat", "plat"],
-      "C": null,
+      "C": ["plat", "plat", "plat", "col", "col", "col"],
       "D": ["col", "col", "col", "col", "col", "descente"],
       "E": ["épingle_droite", "épingle_droite"],
       "F": ["descente", "descente", "descente", "plat", "plat", "plat"],
@@ -82,7 +82,7 @@
       "J": ["gauche_sec", "gauche_sec"],
       "K": ["raidillon_gauche", "raidillon_gauche"],
       "L": ["col", "col", "col", "descente", "descente", "descente"],
-      "M": null,
+      "M": ["plat", "plat", "col", "col", "col", "col"],
       "N": ["col", "col", "col", "col", "col", "col"],
       "O": ["épingle_gauche", "épingle_gauche"],
       "P": ["descente_épingle_gauche", "descente_épingle_gauche"],
@@ -118,9 +118,21 @@
       "tours": 1,
       "tracé": "abcdefghijklmnopqrstu"
     },
+    "Briançon - Izoard": {
+      "tours": 1,
+      "tracé": "afiPmTKSdjoCQRLHBNGEU"
+    },
+    "Dole - Station des Rousses": {
+      "tours": 1,
+      "tracé": "ajfMECTKsqRLPHiDBNOgu"
+    },
     "Florence - Milan": {
       "tours": 1,
       "tracé": "abcgiDHqntmKOLrepJsfu"
+    },
+    "La Mure - Serre-Chevalier": {
+      "tours": 1,
+      "tracé": "aICEtQGORLPHJMNKDBSu"
     },
     "La classicissima": {
       "tours": 1,
@@ -134,6 +146,18 @@
       "tours": 1,
       "tracé": "abcfimetKGLHJsdopRQNU"
     },
+    "Laissac Séverac l'Église - Le Puy en Velay": {
+      "tours": 1,
+      "tracé": "AsNLcITmrQOkJPFGEDHBu"
+    },
+    "Nantua - Chambéry": {
+      "tours": 1,
+      "tracé": "aNPHtimOELKRBSJCQDFgu"
+    },
+    "Pau - Peyragudes": {
+      "tours": 1,
+      "tracé": "atsmCJdifNBERKOLPHGQU"
+    },
     "Plateaux de Wallonie": {
       "tours": 1,
       "tracé": "AbJiLcGHtdfpkmnrqEoSu"
@@ -141,6 +165,18 @@
     "Ronde van Wevelgem": {
       "tours": 1,
       "tracé": "abcmgfteqonLPjkIDHrSu"
+    },
+    "Saint Girons - Foix": {
+      "tours": 1,
+      "tracé": "alktJCRPMEHFSqGOBidnu"
+    },
+    "Sprint de montagne": {
+      "tours": 1,
+      "tracé": "afCOLibNDPSgTkerjQHmu"
+    },
+    "Vittel - La planche des belles filles": {
+      "tours": 1,
+      "tracé": "aIHdTFljsMNPBCORKGQEU"
     }
   }
 }
