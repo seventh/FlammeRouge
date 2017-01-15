@@ -25,16 +25,14 @@ ones: the blue (bleu) one, the green (vert) one and the black (noir) one.
 ::
 
     +~~~~+<<<<+<<<<+<<<<+<<<<+<<<<+<<<<+<<<<+>>>>+>>>>+>>>>+>>>>+>>>>+~~~~+
-    | Sn |    |    |    |    |    |    |    |    |    | →→ |    | →→ |    |
+    | Sn*|    |    |    |    |    |    |    |    |    | →→ |    | →→ |    |
     +----+----+----+----+----+----+----+----+----+----+----+----+----+----+
-    | Sv |    |    | Rn |    |    |    | Sg | Rv | Rg | →→ | Rb | →→ | Sb |
+    | Sv*|    |    | Rn*|    |    |    | Sg*| Rv | Rg | →→ | Rb | →→ | Sb*|
     +====+<<<<+<<<<+<<<<+<<<<+<<<<+<<<<+<<<<+>>>>+>>>>+>>>>+>>>>+>>>>+====+
     | 35 | 36 | 37 | 38 | 39 | 40 | 41 | 42 | 43 | 44 | 45 | 46 | 47 | 48 |
      Prochain point d'étape au km 62 : ascension de 12 km
-    Équipe bleue : fatigue du sprinteur
-    Équipe grise : fatigue du sprinteur <---
-    Équipe noire : fatigue du rouleur et du sprinteur
-    Équipe verte : fatigue du sprinteur
+
+Exhaustion is shown aside each team member with a star "*".
 
 Each team is composed of a Sprinteur and a Rouleur, so that each member of a
 team is shown as a digram. For example, 'Rb' stands for the blue Runner, 'Sg'

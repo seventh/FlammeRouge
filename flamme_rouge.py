@@ -493,6 +493,20 @@ class Pion(collections.namedtuple("Pion", ["profil", "joueur"])):
         return retour
 
 
+class Peloton:
+
+    def __init__(self, début, fin, aspiration):
+        self.début = début
+        self.fin = fin
+        self.aspiration = aspiration
+
+    def __str__(self):
+        retour = "Peloton de {} à {} : aspiration={}".format(self.début,
+                                                             self.fin,
+                                                             self.aspiration)
+        return retour
+
+
 class Tracé:
 
     def __init__(self, cases, départ, arrivée, lg_tour):
@@ -541,7 +555,8 @@ class Tracé:
         self.cases[self.positions[pion]].retirer(pion)
         del self.positions[pion]
 
-    def afficher(self, début=None, garde=None, aspiration=list()):
+    def afficher(self, début=None, garde=None, aspiration=list(),
+                 fatigue=list()):
         if début is None:
             début = min(self.positions.values(), default=0)
         if garde is None:
@@ -568,14 +583,17 @@ class Tracé:
             else:
                 ligne += "| "
             if i in aspiration:
-                ligne += "→→"
+                ligne += "→→ "
             else:
                 pion = self.cases[i].gauche
                 if pion is None:
-                    ligne += "  "
+                    ligne += "   "
                 else:
                     ligne += str(pion)
-            ligne += " "
+                    if i in fatigue:
+                        ligne += "*"
+                    else:
+                        ligne += " "
         if self.est_flamme(garde):
             ligne += "‖"
         else:
@@ -597,14 +615,17 @@ class Tracé:
             else:
                 ligne += "| "
             if i in aspiration:
-                ligne += "→→"
+                ligne += "→→ "
             else:
                 pion = self.cases[i].droite
                 if pion is None:
-                    ligne += "  "
+                    ligne += "   "
                 else:
                     ligne += str(pion)
-            ligne += " "
+                    if i in fatigue:
+                        ligne += "*"
+                    else:
+                        ligne += " "
         if self.est_flamme(garde):
             ligne += "‖"
         else:
@@ -703,78 +724,93 @@ class Tracé:
         # Déplacement effectif
         self.poser(pion, i + énergie)
 
-    def aspirer(self, joueurs):
-        """Applique l'algorithme d'aspiration
+    def aspirer_et_fatiguer(self):
+        """Applique à la fois l'algorithme d'aspiration et de fatigue
         """
-        # Détermination des cases d'aspiration
-        cases_aspiration = list()
-        for i in range(min(self.positions.values()) + 1,
-                       max(self.positions.values())):
-            if (not self.cases[i - 1].est_vide() and
-                    not self.cases[i - 1].pente == Pente.col and
-                    self.cases[i].est_vide() and
-                    not self.cases[i + 1].est_vide() and
-                    not self.cases[i + 1].pente == Pente.col):
-                cases_aspiration.append(i)
+        # Détermination des pelotons en prenant en compte la règle de
+        # l'aspiration
+        pelotons = list()
+        aspis = list()
+        fatigues = list()
+
+        début = min(self.positions.values())
+        while début <= max(self.positions.values()):
+            aspiration = False
+            fin = début
+            while fin + 1 <= max(self.positions.values()):
+                if self.cases[fin].pente == Pente.col:
+                    if (self.cases[fin + 1].pente == Pente.col and
+                            not self.cases[fin + 1].est_vide()):
+                        fin += 1
+                    else:
+                        break
+                elif not self.cases[fin + 1].est_vide():
+                    fin += 1
+                elif (fin + 2 <= max(self.positions.values()) and
+                      not self.cases[fin + 2].est_vide() and
+                      self.cases[fin + 1].pente != Pente.col and  # robustesse
+                      self.cases[fin + 2].pente != Pente.col):
+                    aspiration = True
+                    aspis.append(fin + 1)
+                    fin += 2
+                else:
+                    break
+
+            if (len(pelotons) != 0 and
+                    pelotons[-1].fin + 1 == début and
+                    not aspiration):
+                pelotons[-1].fin = fin
+            else:
+                pelotons.append(Peloton(début, fin, aspiration))
+            début = fin + 1
+            while (début <= max(self.positions.values()) and
+                   self.cases[début].est_vide()):
+                début += 1
+
+        fatigues = [p.fin for p in pelotons if p.fin < self.arrivée]
 
         # Affichage
-        if len(cases_aspiration) != 0:
-            self.afficher(aspiration=cases_aspiration)
+        self.afficher(aspiration=aspis, fatigue=fatigues)
 
-        # Application de l'aspiration
-        for i in cases_aspiration:
-            j = i - 1
-            while not (self.cases[j].est_vide() or
-                       self.cases[j].pente == Pente.col):
-                case = self.cases[j]
-                pion = case.droite
-                self.retirer(pion)
-                self.poser(pion, j + 1)
-                pion = case.gauche
-                if pion is not None:
-                    self.retirer(pion)
-                    self.poser(pion, j + 1)
-                j -= 1
+        # Application des effets
+        for p in pelotons:
+            # - aspiration
+            if p.aspiration:
+                m = p.fin - 1
+                while True:
+                    while m >= p.début and not self.cases[m].est_vide():
+                        m -= 1
+                    l = m - 1
+                    while l >= p.début and self.cases[l].est_vide():
+                        l -= 1
+                    if l < p.début:
+                        break
+                    else:
+                        case = self.cases[l]
+                        pion = case.droite
+                        self.retirer(pion)
+                        self.poser(pion, m)
+                        pion = case.gauche
+                        if pion is not None:
+                            self.retirer(pion)
+                            self.poser(pion, m)
+                        m -= 1
+            # - fatigue
+            case = self.cases[p.fin]
+            pion = case.droite
+            if pion.profil == Profil.sprinteur:
+                pion.joueur.défausse_sprinteur.append(2)
+            else:
+                pion.joueur.défausse_rouleur.append(2)
 
-    def fatiguer(self):
-        """Ajoute de la fatigue à tous les coureurs face au vent
-        """
-        fatigués = collections.defaultdict(list)
-
-        for i in range(min(self.positions.values()),
-                       1 + max(self.positions.values())):
-            case = self.cases[i]
-            if (not case.est_vide() and
-                    i < self.arrivée and
-                    self.cases[i + 1].est_vide()):
-                pion = case.droite
+            pion = case.gauche
+            if pion is not None:
                 if pion.profil == Profil.sprinteur:
                     pion.joueur.défausse_sprinteur.append(2)
                 else:
                     pion.joueur.défausse_rouleur.append(2)
-                fatigués[pion.joueur.couleur].append(pion)
 
-                pion = case.gauche
-                if pion is not None:
-                    if pion.profil == Profil.sprinteur:
-                        pion.joueur.défausse_sprinteur.append(2)
-                    else:
-                        pion.joueur.défausse_rouleur.append(2)
-                    fatigués[pion.joueur.couleur].append(pion)
-
-        return fatigués
-
-    def afficher_fatigue(self, fatigués, couleur_joueur):
-        for couleur in sorted(fatigués, key=lambda c: c.name):
-            ligne = "Équipe {}e : fatigue ".format(couleur.name)
-            coureurs = sorted(fatigués[couleur], key=str)
-            ligne += " et ".join(["du {}".format(x.profil.name)
-                                  for x in coureurs])
-            if couleur == couleur_joueur:
-                ligne += " <---"
-            print(ligne)
-
-    def ordre(self):
+    def ordre(self, couleur):
         """Affiche l'ordre des équipes dans la course
         """
         couleurs = list()
@@ -788,7 +824,11 @@ class Tracé:
             if pion is not None and pion.joueur.couleur not in couleurs:
                 couleurs.append(pion.joueur.couleur)
 
-        return couleurs
+        for i in range(len(couleurs)):
+            ligne = " N°{} : équipe {}e".format(i + 1, couleurs[i].name)
+            if couleurs[i] == couleur:
+                ligne += " <---"
+            print(ligne)
 
 
 def principal():
@@ -829,16 +869,15 @@ def principal():
         tracé.déplacer(paires)
 
         # Phase finale
-        tracé.aspirer(joueurs)
-        fatigués = tracé.fatiguer()
-        tracé.afficher_fatigue(fatigués, Couleur.gris)
+        tracé.aspirer_et_fatiguer()
 
         # Détection de la fin de partie
         fin_de_partie = (max(tracé.positions.values()) >= tracé.arrivée)
 
     # Fin de la partie
+    print("\n")
     tracé.afficher()
-    tracé.ordre()
+    tracé.ordre(Couleur.gris)
 
 
 if __name__ == "__main__":
