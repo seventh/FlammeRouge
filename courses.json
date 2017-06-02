@@ -118,13 +118,25 @@
       "tours": 1,
       "tracé": "abcdefghijklmnopqrstu"
     },
-    "Ballons centrale" : {
+    "Ballons centrale": {
       "tours": 1,
       "tracé": "AnLHgceqfrMBoipjDFkSu"
     },
     "Briançon - Izoard": {
       "tours": 1,
       "tracé": "afiPmTKSdjoCQRLHBNGEU"
+    },
+    "Col cintré": {
+      "tours": 1,
+      "tracé": "anJtDBshIOKPFGRLmeqcu"
+    },
+    "Col d'Asger": {
+      "tours": 1,
+      "tracé": "acPHFBljIdKQRsmtGEONU"
+    },
+    "Col Hector": {
+      "tours": 1,
+      "tracé": "ashbMODPJTIKLFQERGCNU"
     },
     "Dole - Station des Rousses": {
       "tours": 1,
@@ -133,6 +145,10 @@
     "Florence - Milan": {
       "tours": 1,
       "tracé": "abcgiDHqntmKOLrepJsfu"
+    },
+    "Histoire d'un aller-retour": {
+      "tours": 1,
+      "tracé": "aCLBImPHjkdfoestrQGNU"
     },
     "La Mure - Serre-Chevalier": {
       "tours": 1,
@@ -146,6 +162,10 @@
       "tours": 2,
       "tracé": "akoclERQNPHBTIsFgjmu"
     },
+    "La doyenne": {
+      "tours": 1,
+      "tracé": "ALeCFOKBnjpdMHitSqRGU"
+    },
     "La haute montagne": {
       "tours": 1,
       "tracé": "abcfimetKGLHJsdopRQNU"
@@ -154,9 +174,21 @@
       "tours": 1,
       "tracé": "AsNLcITmrQOkJPFGEDHBu"
     },
+    "L'entre-côtes": {
+      "tours": 1,
+      "tracé": "adeNibjpOKRLtCFSqMhu"
+    },
     "Nantua - Chambéry": {
       "tours": 1,
       "tracé": "aNPHtimOELKRBSJCQDFgu"
+    },
+    "Over the hills and far away": {
+      "tours": 1,
+      "tracé": "aLtqDPHBJiFkromneScgu"
+    },
+    "Paris - Roubaix": {
+      "tours": 1,
+      "tracé": "abcegdfIhjlotqkmspnru"
     },
     "Pau - Peyragudes": {
       "tours": 1,
@@ -181,6 +213,38 @@
     "Vittel - La planche des belles filles": {
       "tours": 1,
       "tracé": "aIHdTFljsMNPBCORKGQEU"
+    },
+    "Histoire d'un aller-retour": {
+      "tours": 1,
+      "tracé": "aCLBImPHjkdfoestrQGNU"
+    },
+    "Col d'Asger": {
+      "tours": 1,
+      "tracé": "acPHFBljIdKQRsmtGEONU"
+    },
+    "La doyenne": {
+      "tours": 1,
+      "tracé": "ALeCFOKBnjpdMHitSqRGU"
+    },
+    "L'entre-côtes": {
+      "tours": 1,
+      "tracé": "adeNibjpOKRLtCFSqMhu"
+    },
+    "Col cintré": {
+      "tours": 1,
+      "tracé": "anJtDBshIOKPFGRLmeqcu"
+    },
+    "Col Hector": {
+      "tours": 1,
+      "tracé": "ashbMODPJTIKLFQERGCNU"
+    },
+    "Paris - Roubaix": {
+      "tours": 1,
+      "tracé": "abcegdfIhjlotqkmspnru"
+    },
+    "Over the hills and far away": {
+      "tours": 1,
+      "tracé": "aLtqDPHBJiFkromneScgu"
     }
   }
 }
