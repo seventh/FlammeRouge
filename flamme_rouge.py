@@ -655,6 +655,67 @@ class Robourrin(Joueur):
         return Paire(sprinteur, rouleur)
 
 
+class Rofinot(Joueur):
+    """Robot qui joue tout ce qu'il a de plus fort, sans effort inutile
+    """
+
+    def placer(self, tracé):
+        return Paire(tracé.départ - 1, tracé.départ - 1)
+
+    def jouer(self, tracé):
+        énergies_sprinteur = self._piocher(
+            self.sprinteur, self.défausse_sprinteur)
+        énergies_rouleur = self._piocher(self.rouleur, self.défausse_rouleur)
+
+        # On a beau être un bourrin, on évite de trop fatiguer
+        index_sprinteur = tracé.positions[Pion(Profil.sprinteur, self)]
+        index_rouleur = tracé.positions[Pion(Profil.rouleur, self)]
+
+        if tracé.cases[index_sprinteur].pente == Pente.descente:
+            sprinteur = min(énergies_sprinteur)
+        else:
+            for d in range(1, 10):
+                if tracé.cases[index_sprinteur + d].pente == Pente.col:
+                    if d <= 5:
+                        max_sprinteur = 5
+                    else:
+                        max_sprinteur = d - 1
+
+                    és = [é for é in énergies_sprinteur if é <= max_sprinteur]
+                    if len(és) == 0:
+                        és = [min(énergies_sprinteur)]
+                    break
+            else:
+                és = énergies_sprinteur
+            sprinteur = max(és)
+
+        if tracé.cases[index_rouleur].pente == Pente.descente:
+            rouleur = min(énergies_rouleur)
+        else:
+            for d in range(1, 10):
+                if tracé.cases[index_rouleur + d].pente == Pente.col:
+                    if d <= 5:
+                        max_rouleur = 5
+                    else:
+                        max_rouleur = d - 1
+
+                    ér = [é for é in énergies_rouleur if é <= max_rouleur]
+                    if len(ér) == 0:
+                        ér = [min(énergies_rouleur)]
+                    break
+            else:
+                ér = énergies_rouleur
+            rouleur = max(ér)
+
+        énergies_sprinteur.remove(sprinteur)
+        énergies_rouleur.remove(rouleur)
+
+        self.défausse_sprinteur.extend(énergies_sprinteur)
+        self.défausse_rouleur.extend(énergies_rouleur)
+
+        return Paire(sprinteur, rouleur)
+
+
 class Pente(enum.Enum):
     """Pente perçue dans le sens de la marche
     """
@@ -1025,7 +1086,7 @@ def principal(nb_humains):
     for tâche in tâches:
         tâche.join()
     for i in range(nb_humains, 4):
-        genre = random.sample([Robot, Robourrin, Robomou], 1)[0]
+        genre = random.sample([Robot, Robourrin, Robomou, Rofinot], 1)[0]
         joueurs.append(genre(couleurs[i], nb_tours))
     random.shuffle(joueurs)
     for joueur in joueurs:
