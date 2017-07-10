@@ -76,7 +76,7 @@
       "D": ["col", "col", "col", "col", "col", "descente"],
       "E": ["épingle_droite", "épingle_droite"],
       "F": ["descente", "descente", "descente", "plat", "plat", "plat"],
-      "G": ["épingle_gauche", "épingle_gauche"],
+      "G": ["épingle_droite", "épingle_droite"],
       "H": ["descente_raidillon_droite", "descente_raidillon_droite"],
       "I": ["droite_sec", "droite_sec"],
       "J": ["gauche_sec", "gauche_sec"],
