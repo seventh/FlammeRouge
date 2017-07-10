@@ -7,14 +7,21 @@ Se base sur la sortie de gen_circuit.py, qui fournit les tracés
 
 import itertools
 import json
+import sys
 
 
 def code(tronçon, entrée):
     retour = ""
     codes = {-1: "↓", 0: "→", 1: "↑"}
     for nom_case in tronçon:
-        pente = entrée["cases"][nom_case]["pente"]
-        retour += codes[pente]
+        if nom_case == "arrivée":
+            code = "A"
+        elif nom_case == "départ":
+            code = "D"
+        else:
+            pente = entrée["cases"][nom_case]["pente"]
+            code = codes[pente]
+        retour += code
     return retour
 
 
@@ -32,22 +39,50 @@ def dénombrer_variantes(chemin, type):
         if parcours["cases"][tronçon[0]]["angle"] == type:
             tronçons[nom] = code(tronçon, parcours)
 
-    # Il reste deux restrictions spécifiques au type «0» :
-    #  - quand on choisit une face, on ne peut poser l'autre (et oui !)
-    #  - on commence par A/a et on termine par U/u.
     signatures = dict()
 
-    print(tronçons.keys())
-    for p in itertools.permutations(sorted(tronçons, key=str.lower)):
-        signature = ""
-        for nom in p:
-            signature += tronçons[nom]
-        if signature not in signatures:
-            signatures[signature] = p
+    if type != 0:
+        for p in itertools.permutations(sorted(tronçons, key=str.lower)):
+            signature = ""
+            for nom in p:
+                signature += tronçons[nom]
+            if signature not in signatures:
+                signatures[signature] = "".join(p)
+    else:
+        # Il reste deux restrictions spécifiques au type «0» :
+        #  - quand on choisit une face, on ne peut poser l'autre (et oui !)
+        #  - on commence par un départ et on termine par une arrivée (et oui !)
+        groupes = dict()
+        départs = list()
+        arrivées = list()
+        autres = list()
+        for k in tronçons:
+            clef = k.lower()
+            groupes.setdefault(clef, list()).append(k)
+            if parcours["tronçons"][k][0] == "départ":
+                départs.append(k)
+            elif parcours["tronçons"][k][-1] == "arrivée":
+                arrivées.append(k)
+            else:
+                autres.append(k)
+        for f_début in itertools.permutations(*[groupes[g] for g in départs if g.islower()]):
+            for p_début in itertools.product(f_début):
+                for f_milieu in itertools.product(*[groupes[g] for g in autres if g.islower()]):
+                    for p_milieu in itertools.permutations(f_milieu):
+                        for f_fin in itertools.product(*[groupes[g] for g in arrivées if g.islower()]):
+                            for p_fin in itertools.permutations(f_fin):
+                                p = "".join(p_début + p_milieu + p_fin)
+                                signature = ""
+                                for nom in p:
+                                    signature += tronçons[nom]
+                                if (signature not in signatures or
+                                        signatures[signature] > p):
+                                    signatures[signature] = p
 
-    for signature, suite in signatures.items():
-        print(signature, suite)
+    for signature in sorted(signatures, key=lambda s: signatures[s].lower()):
+        print(signature, signatures[signature])
 
 
 if __name__ == "__main__":
-    dénombrer_variantes("../courses.json", 2)
+    if len(sys.argv) >= 2:
+        dénombrer_variantes("../courses.json", int(sys.argv[1]))
