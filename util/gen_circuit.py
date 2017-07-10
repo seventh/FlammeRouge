@@ -183,6 +183,8 @@ def rechercher(tracé, sortie):
             valeur = (valeur << 3) + (i & 0x07)
         données = struct.pack(">Q", valeur)
         sortie.write(données)
+        if tracé._jalon == [0, 0]:
+            print("Circuit : {}".format(tracé))
     else:
         for t in tracé:
             rechercher(t, sortie)
