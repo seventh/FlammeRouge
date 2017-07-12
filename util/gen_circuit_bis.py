@@ -50,6 +50,10 @@ def dénombrer_variantes(chemin, type, card):
 
     signatures = dict()
 
+    def clef(chaîne):
+        retour = (chaîne.lower(), chaîne.swapcase())
+        return retour
+
     if type != 0:
         for c in itertools.combinations(tronçons, card):
             negs = set(tronçons)
@@ -65,11 +69,11 @@ def dénombrer_variantes(chemin, type, card):
                     signeg = ""
                     for nom in q:
                         signeg += codes[nom]
-                    clef = (signature, signeg)
+                    clé = (signature, signeg)
                     mem = "".join(p + q)
-                    if (clef not in signatures or
-                            signatures[clef].lower() > mem.lower()):
-                        signatures[clef] = mem
+                    if (clé not in signatures or
+                            clef(signatures[clé]) > clef(mem)):
+                        signatures[clé] = mem
     else:
         # Il reste deux restrictions spécifiques au type «0» :
         #  - quand on choisit une face, on ne peut poser l'autre (et oui !)
@@ -87,21 +91,22 @@ def dénombrer_variantes(chemin, type, card):
                 arrivées.append(k)
             else:
                 autres.append(k)
-        for f_début in itertools.permutations(*[groupes[g] for g in départs if g.islower()]):
-            for p_début in itertools.product(f_début):
-                for f_milieu in itertools.product(*[groupes[g] for g in autres if g.islower()]):
-                    for p_milieu in itertools.permutations(f_milieu):
-                        for f_fin in itertools.product(*[groupes[g] for g in arrivées if g.islower()]):
-                            for p_fin in itertools.permutations(f_fin):
-                                p = "".join(p_début + p_milieu + p_fin)
-                                signature = ""
-                                for nom in p:
-                                    signature += codes[nom]
-                                if (signature not in signatures or
-                                        signatures[signature] > p):
-                                    signatures[signature] = p
 
-    for signature in sorted(signatures, key=lambda s: signatures[s].lower()):
+        def combi(groupe):
+            for f in itertools.product(*[groupes[g] for g in groupe if g.islower()]):
+                for p in itertools.permutations(f):
+                    yield p
+
+        for t in itertools.product(combi(départs), combi(autres), combi(arrivées)):
+            p = "".join(sum(t, ()))
+            signature = ""
+            for nom in p:
+                signature += codes[nom]
+            if (signature not in signatures or
+                    clef(signatures[signature]) > clef(p)):
+                signatures[signature] = p
+
+    for signature in sorted(signatures, key=lambda s: clef(signatures[s])):
         print(signature, signatures[signature])
 
 
