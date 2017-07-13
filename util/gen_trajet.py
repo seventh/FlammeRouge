@@ -5,7 +5,6 @@
 
 import copy
 import json
-import struct
 
 import Polygon
 
@@ -178,10 +177,13 @@ class Tracé:
 
 def rechercher(tracé, sortie):
     if tracé._magot.est_vide():
+        # Le début et la fin valent nécessairement 0
+        # 19 valeurs dans [-2, 2] occupent 45 bits → 6 octets
         valeur = 0
-        for i in tracé._chemin:
-            valeur = (valeur << 3) + (i & 0x07)
-        données = struct.pack(">Q", valeur)
+        for i in tracé._chemin[1:-1]:
+            valeur *= 5
+            valeur += i + 2
+        données = valeur.to_bytes(6, "big")
         sortie.write(données)
         if tracé._jalon == [0, 0]:
             print("Circuit : {}".format(tracé))
@@ -193,5 +195,5 @@ def rechercher(tracé, sortie):
 if __name__ == "__main__":
     magot = dénombrer_formes("../courses.json")
     t = Tracé(magot)
-    sortie = open("formes.bin", "wb")
+    sortie = open("trajets.bin", "wb")
     rechercher(t, sortie)
