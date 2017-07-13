@@ -8,6 +8,8 @@ import json
 
 import Polygon
 
+import trajet
+
 
 def dénombrer_formes(chemin):
     """Dénombre les formes à partir du fichier des courses
@@ -177,12 +179,7 @@ class Tracé:
 
 def rechercher(tracé, sortie):
     if tracé._magot.est_vide():
-        # Le début et la fin valent nécessairement 0
-        # 19 valeurs dans [-2, 2] occupent 45 bits → 6 octets
-        valeur = 0
-        for i in tracé._chemin[1:-1]:
-            valeur *= 5
-            valeur += i + 2
+        valeur = trajet.coder(tracé._chemin)
         données = valeur.to_bytes(6, "big")
         sortie.write(données)
         if tracé._jalon == [0, 0]:
