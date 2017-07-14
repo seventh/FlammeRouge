@@ -80,6 +80,8 @@ def _construire(pos1d, pos1i, pos2d, pos2i):
 
 def gen():
     """Itérateur des différentes combinaisons de tuiles possibles
+
+    Les trajets obtenus ne sont peut-être pas constructibles.
     """
     pos = list(range(1, 21))
 
@@ -96,8 +98,10 @@ def gen():
                 for c4 in itertools.product([False, True], repeat=len(pos2)):
                     pos4, res4 = _compresser(pos2, c4)
 
-                    print(_construire(pos3, res3, pos4, res4))
+                    retour = _construire(pos3, res3, pos4, res4)
+                    yield retour
 
 
 if __name__ == "__main__":
-    gen()
+    for trajet in gen():
+        print(trajet)
