@@ -1,7 +1,7 @@
 """Codage alternatif d'un trajet, pour tenir sur 38 bits
 """
 
-import math
+import random
 
 
 def _c(n, k):
@@ -25,13 +25,13 @@ def _rang(combinaison, n):
     retour = 0
 
     i = 0
-    for v in range(n):
+    v = 0
+    while i < len(combinaison):
         if v < combinaison[i]:
             retour += _c(n - v - 1, len(combinaison) - i - 1)
         else:
             i += 1
-            if i == len(combinaison):
-                break
+        v += 1
 
     return retour
 
@@ -78,7 +78,8 @@ def _combinaison(rang, n, p):
             retour.append(v)
             i += 1
         v += 1
-    retour.append(v + rang)
+    if p > 0:
+        retour.append(v + rang)
 
     return retour
 
@@ -87,8 +88,9 @@ def décoder(code):
     reste, code2 = divmod(code, 64)
     reste, code1 = divmod(reste, 64)
     rang1, rang2 = divmod(reste, _c(13, 6))
+    pos1 = _combinaison(rang1, 19, 6)
+    pos2 = _combinaison(rang2, 13, 6)
 
-    print(rang1, rang2, code1, code2)
     val1 = list()
     val2 = list()
     for i in range(6):
@@ -106,10 +108,26 @@ def décoder(code):
     val1.reverse()
     val2.reverse()
 
-    print(rang1, rang2, val1, val2)
+    # Construction
+    retour = [0]
+    j = 0
+    k = 0
+    for i in range(20):
+        if j < 6 and pos1[j] == i:
+            retour.append(val1[j])
+            j += 1
+        elif k < 6 and pos2[k] + j == i:
+            retour.append(val2[k])
+            k += 1
+        else:
+            retour.append(0)
+
+    return retour
+
 
 if __name__ == "__main__":
-    trajet = [0, -1, -1, -1, -1, -1, -1, -2, -
-              2, -2, -2, -2, 0, -2, 0, 0, 0, 0, 0, 0, 0]
-    c = coder(trajet)
-    décoder(c)
+    rang_max = _c(19, 6) * _c(13, 6) * 2**6 * 2**6
+    code = random.randrange(rang_max)
+    trajet = décoder(code)
+    print(code, code == coder(trajet))
+    print(trajet)
