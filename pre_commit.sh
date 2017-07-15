@@ -1,5 +1,7 @@
 #!/bin/bash
 
-txtnet *.py */*.py
-python3-autopep8 -i *.py */*.py
-python3-flake8 *.py */*.py
+PYS=$( find . -type f -name '*.py' )
+
+txtnet $PYS
+python3-autopep8 -i $PYS
+python3-flake8 $PYS
