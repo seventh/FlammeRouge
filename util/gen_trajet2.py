@@ -259,5 +259,14 @@ def reprendre():
 
 if __name__ == "__main__":
     contexte = reprendre()
-    while contexte.prochain():
-        print(contexte)
+    with open(TRAJETS, "ab") as sortie:
+        nb = sortie.tell() // 6
+        print("{} | {}".format(nb, contexte.trajet()))
+        while contexte.prochain():
+            t = contexte.trajet()
+            code = trajet.coder(t)
+            données = code.to_bytes(6, "big")
+            sortie.write(données)
+            nb += 1
+            if nb % 100000 == 0:
+                print("{:.1f}M | {}".format(nb / 1000000, t))
