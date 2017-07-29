@@ -8,9 +8,8 @@ import copy
 import Polygon
 
 import agent
-import trajet2
+import trajet
 
-NB_BITS = 38
 TRAJETS = "trajets2.bin"
 
 
@@ -243,9 +242,9 @@ def reprendre():
 
     try:
         with open(TRAJETS, "rb") as trajets:
-            lecteur = agent.Lecteur(trajets, NB_BITS)
+            lecteur = agent.Lecteur(trajets, trajet.NB_BITS)
             code = lecteur.dernier()
-            t = trajet2.décoder(code)
+            t = trajet.décoder(code)
             retour = Contexte.reprendre(t)
     except FileNotFoundError:
         retour = Contexte.premier()
@@ -258,10 +257,10 @@ if __name__ == "__main__":
     with open(TRAJETS, "ab") as sortie:
         nb = 4 * sortie.tell() // 19
         print("{} | {}".format(nb, contexte.trajet()))
-        auteur = agent.Metteur(sortie, NB_BITS)
+        auteur = agent.Metteur(sortie, trajet.NB_BITS)
         while contexte.prochain():
             t = contexte.trajet()
-            code = trajet2.coder(t)
+            code = trajet.coder(t)
             auteur.met(code)
             nb += 1
             if nb % 100000 == 0:
