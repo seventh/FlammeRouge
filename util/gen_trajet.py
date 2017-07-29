@@ -7,10 +7,11 @@ import copy
 
 import Polygon
 
-import trajet
+import agent
+import trajet2
 
-NB_OCTETS = 6
-TRAJETS = "trajets.bin"
+NB_BITS = 38
+TRAJETS = "trajets2.bin"
 
 
 class Magot:
@@ -242,14 +243,9 @@ def reprendre():
 
     try:
         with open(TRAJETS, "rb") as trajets:
-            # Alignement sur le dernier code complet
-            # Un code fait NB_OCTETS octets
-            trajets.seek(0, 2)
-            taille = trajets.tell()
-            trajets.seek(-NB_OCTETS - taille % NB_OCTETS, 1)
-            données = trajets.read(NB_OCTETS)
-            code = int.from_bytes(données, "big", signed=True)
-            t = trajet.décoder(code)
+            lecteur = agent.Lecteur(trajets, NB_BITS)
+            code = lecteur.dernier()
+            t = trajet2.décoder(code)
             retour = Contexte.reprendre(t)
     except FileNotFoundError:
         retour = Contexte.premier()
@@ -260,13 +256,13 @@ def reprendre():
 if __name__ == "__main__":
     contexte = reprendre()
     with open(TRAJETS, "ab") as sortie:
-        nb = sortie.tell() // 6
+        nb = 4 * sortie.tell() // 19
         print("{} | {}".format(nb, contexte.trajet()))
+        auteur = agent.Metteur(sortie, NB_BITS)
         while contexte.prochain():
             t = contexte.trajet()
-            code = trajet.coder(t)
-            données = code.to_bytes(6, "big")
-            sortie.write(données)
+            code = trajet2.coder(t)
+            auteur.met(code)
             nb += 1
             if nb % 100000 == 0:
                 print("{:.1f}M | {}".format(nb / 1000000, t))

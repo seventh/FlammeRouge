@@ -22,6 +22,22 @@ class Lecteur:
         self._bloc = None
         self._item = self._nb_items_par_bloc
 
+    def dernier(self):
+        self._fichier.seek(0, 2)
+        lg = self._fichier.tell()
+        self._fichier.seek(-self._taille_bloc - lg % self._taille_bloc, 1)
+        # Réinitialisation des données de lecture
+        self._item = self._nb_items_par_bloc
+        self._bloc = None
+        # Lecture des dernières valeurs
+        retour = None
+        while True:
+            valeur = self.lit()
+            if valeur is None:
+                break
+            retour = valeur
+        return retour
+
     def lit(self):
         retour = None
         if self._item == self._nb_items_par_bloc:
