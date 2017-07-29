@@ -21,6 +21,9 @@ if __name__ == "__main__":
                 if code is None:
                     m.met(dernier_code)
                     break
+                elif code >= trajet.CODE_GARDE:
+                    print("Code erroné : {}".format(code))
+                    break
                 else:
                     t = trajet.décoder(code)
                     if dernier_code is None:
@@ -32,3 +35,4 @@ if __name__ == "__main__":
                         dernier_trajet = t
                     else:
                         print("Suppression de {}".format(t))
+                        break

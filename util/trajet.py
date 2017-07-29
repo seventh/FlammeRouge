@@ -5,7 +5,7 @@ import random
 
 
 NB_BITS = 38
-
+CODE_GARDE = 190703665152
 
 def _c(n, k):
     retour = 1

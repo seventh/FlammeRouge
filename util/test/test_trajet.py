@@ -44,10 +44,9 @@ class TestCombi(unittest.TestCase):
 
 class TestCodage(unittest.TestCase):
 
-    MAX = 190703665152
 
     def testAléatoire(self):
-        code = random.randrange(self.MAX)
+        code = random.randrange(trajet.CODE_GARDE)
         t = trajet.décoder(code)
         self.assertEqual(len(t), 21)
         self.assertEqual(t.count(2) + t.count(-2), 6)
