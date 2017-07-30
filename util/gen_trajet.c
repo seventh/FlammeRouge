@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include "gpc.h"
 
 typedef signed char i1;
@@ -93,36 +94,81 @@ magot_init (Magot * magot)
 
 
 void
-transfo0 (gpc_vertex * sortie, const gpc_vertex * entree)
+magot_poser (Magot * magot, const Magot * reference, i1 type)
 {
-  sortie->x = entree->x;
-  sortie->y = entree->y;
-}
-
-void
-transfo1 (gpc_vertex * sortie, const gpc_vertex * entree)
-{
-  sortie->x = -entree->y;
-  sortie->y = entree->x;
+  memcpy (magot, reference, sizeof (Magot));
+  magot->nombres[abs (type)] -= 1;
 }
 
 
 void
-transfo2 (gpc_vertex * sortie, const gpc_vertex * entree)
+voie_init (Voie * voie, const Magot * magot)
 {
-  sortie->x = -entree->x;
-  sortie->y = -entree->y;
+  voie->lg = 0;
+
+  if (magot->nombres[2] != 0)
+    {
+      voie->choix[voie->lg] = 2;
+      voie->lg += 1;
+    }
+  if (magot->nombres[1] != 0)
+    {
+      voie->choix[voie->lg] = 1;
+      voie->lg += 1;
+    }
+  if (magot->nombres[0] != 0)
+    {
+      voie->choix[voie->lg] = 0;
+      voie->lg += 1;
+    }
+  if (magot->nombres[1] != 0)
+    {
+      voie->choix[voie->lg] = -1;
+      voie->lg += 1;
+    }
+  if (magot->nombres[2] != 0)
+    {
+      voie->choix[voie->lg] = -2;
+      voie->lg += 1;
+    }
 }
 
 
 void
-transfo3 (gpc_vertex * sortie, const gpc_vertex * entree)
+transfo0 (gpc_vertex * sortie, const gpc_vertex * entree,
+          const gpc_vertex * ecart)
 {
-  sortie->x = entree->y;
-  sortie->y = -entree->x;
+  sortie->x = ecart->x + entree->x;
+  sortie->y = ecart->y + entree->y;
 }
 
-typedef void (Transfo) (gpc_vertex *, const gpc_vertex *);
+void
+transfo1 (gpc_vertex * sortie, const gpc_vertex * entree,
+          const gpc_vertex * ecart)
+{
+  sortie->x = ecart->x - entree->y;
+  sortie->y = ecart->y + entree->x;
+}
+
+
+void
+transfo2 (gpc_vertex * sortie, const gpc_vertex * entree,
+          const gpc_vertex * ecart)
+{
+  sortie->x = ecart->x - entree->x;
+  sortie->y = ecart->y - entree->y;
+}
+
+
+void
+transfo3 (gpc_vertex * sortie, const gpc_vertex * entree,
+          const gpc_vertex * ecart)
+{
+  sortie->x = ecart->x + entree->y;
+  sortie->y = ecart->y - entree->x;
+}
+
+typedef void (Transfo) (gpc_vertex *, const gpc_vertex *, const gpc_vertex *);
 
 Transfo *const TRANSFOS[] = { &transfo0, &transfo0,
   &transfo1, &transfo1,
@@ -130,27 +176,136 @@ Transfo *const TRANSFOS[] = { &transfo0, &transfo0,
   &transfo3, &transfo3,
 };
 
+#define VERTEX_LIST(nom, forme) const gpc_vertex_list nom = { sizeof(forme) / sizeof(gpc_vertex), (gpc_vertex*)forme }
+
+/* Quart-droite */
+
+const gpc_vertex FORME_m2_0[] = {
+  {16, -16}, {15, -12}, {14, -8}, {11, -5}, {8, -2}, {4, -1}, {0, 0}, {0, 64},
+  {9, 63}, {18, 62}, {26, 60}, {35, 56}, {43, 52}, {50, 47}, {57, 41},
+  {63, 34}, {68, 27}, {72, 19}, {76, 10}, {78, 2}, {79, -7}, {80, -16},
+};
+
+VERTEX_LIST (SOMMETS_m2_0, FORME_m2_0);
+
+
+const gpc_vertex FORME_m2_1[] = {
+  {23, 0}, {68, 45}, {61, 51}, {54, 56}, {46, 60}, {37, 64}, {29, 66},
+  {20, 67}, {11, 68}, {2, 67}, {-7, 66}, {-15, 64}, {-24, 60}, {58, 56},
+  {51, 51}, {-45, 45}, {0, 0}, {3, 3}, {7, 4}, {11, 5}, {15, 4}, {19, 3},
+};
+
+VERTEX_LIST (SOMMETS_m2_1, FORME_m2_1);
+
+
+/* Huitième-droite */
+
+const gpc_vertex FORME_m1_0[] = {
+  {43, -17}, {25, 0}, {0, 0}, {0, 64}, {51, 64}, {88, 28}
+};
+
+VERTEX_LIST (SOMMETS_m1_0, FORME_m1_0);
+
+
+const gpc_vertex FORME_m1_1[] = {
+  {43, 17}, {43, 81}, {-8, 81}, {-45, 45}, {0, 0}, {18, 17},
+};
+
+VERTEX_LIST (SOMMETS_m1_1, FORME_m1_1);
+
+
+/* Rectiligne */
+
+const gpc_vertex FORME_0_0[] = {
+  {191, 0}, {191, 64}, {0, 64}, {0, 0},
+};
+
+VERTEX_LIST (SOMMETS_0_0, FORME_0_0);
+
+
+const gpc_vertex FORME_0_1[] = {
+  {135, 135}, {90, 180}, {-45, 45}, {0, 0},
+};
+
+VERTEX_LIST (SOMMETS_0_1, FORME_0_1);
+
+
+/* Huitième-gauche */
+
+const gpc_vertex FORME_p1_0[] = {
+  {88, 36}, {43, 81}, {25, 64}, {0, 64}, {0, 0}, {51, 0},
+};
+
+VERTEX_LIST (SOMMETS_p1_0, FORME_p1_0);
+
+
+const gpc_vertex FORME_p1_1[] = {
+  {36, 88}, {-28, 88}, {-28, 63}, {-45, 45}, {0, 0}, {36, 36},
+};
+
+VERTEX_LIST (SOMMETS_p1_1, FORME_p1_1);
+
+
+/* Quart-gauche */
+
+const gpc_vertex FORME_p2_0[] = {
+  {80, 80}, {16, 80}, {15, 76}, {14, 72}, {11, 69}, {8, 66}, {4, 65}, {0, 64},
+  {0, 0}, {9, 1}, {18, 2}, {26, 4}, {35, 8}, {43, 12}, {50, 17}, {57, 23},
+  {63, 30}, {68, 37}, {72, 45}, {76, 54}, {78, 62}, {79, 71},
+};
+
+VERTEX_LIST (SOMMETS_p2_0, FORME_p2_0);
+
+
+const gpc_vertex FORME_p2_1[] = {
+  {0, 113}, {-45, 68}, {-42, 65}, {-41, 61}, {-40, 57}, {-41, 53}, {-42, 49},
+  {-45, 45}, {0, 0}, {6, 7}, {11, 14}, {15, 22}, {19, 31}, {21, 39}, {22, 48},
+  {23, 57}, {22, 66}, {21, 75}, {19, 83}, {15, 92}, {11, 10}, {6, 17},
+};
+
+VERTEX_LIST (SOMMETS_p2_1, FORME_p2_1);
+
+
+const gpc_vertex_list *const SOMMETS[5][2] = { {&SOMMETS_m2_0, &SOMMETS_m2_1},
+{&SOMMETS_m1_0, &SOMMETS_m1_1},
+{&SOMMETS_0_0, &SOMMETS_0_1},
+{&SOMMETS_p1_0, &SOMMETS_p1_1},
+{&SOMMETS_p2_0, &SOMMETS_p2_1},
+};
+
 
 void
 piece_init (Piece * piece, i1 type, i1 angle, const gpc_vertex * ecart)
 {
   Transfo *const transfo = TRANSFOS[angle];
+  const gpc_vertex_list *const sommets = SOMMETS[type + 2][angle % 2];
+  int _i = 0;
 
-  switch (type)
+  piece->forme.num_contours = 1;
+  piece->forme.hole = NULL;
+  piece->forme.contour = malloc (sizeof (gpc_vertex_list));
+  piece->forme.contour->num_vertices = sommets->num_vertices;
+  piece->forme.contour->vertex =
+    malloc (sommets->num_vertices * sizeof (gpc_vertex));
+  for (_i = 0; _i < sommets->num_vertices; ++_i)
     {
-    case -2:
-      break;
-    case -1:
-      break;
-    case 0:
-      break;
-    case 1:
-      break;
-    case 2:
-      break;
+      (*transfo) (piece->forme.contour->vertex + _i, sommets->vertex + _i,
+                  ecart);
     }
+
+  memcpy (&piece->jalon, piece->forme.contour->vertex, sizeof (gpc_vertex));
+  piece->angle = (angle + type) % 8;
 }
 
+
+void
+piece_free (Piece * piece)
+{
+  gpc_free_polygon (&piece->forme);
+  piece->forme.num_contours = 0;
+  piece->forme.hole = NULL;
+  piece->forme.contour = NULL;
+}
 
 void
 afficher_trajet (FILE * sortie, const Trajet * trajet)
@@ -276,11 +431,15 @@ main (void)
 {
   Contexte *contexte = malloc (sizeof (Contexte));
   FILE *sortie = NULL;
+  Piece piece;
+  const gpc_vertex origine = { 0, 0 };
 
   contexte->lg = 0;
   sortie = ouvrir_fichier (SORTIE);
 
   reprendre (contexte, sortie);
+  piece_init (&piece, -2, 5, &origine);
+  piece_free (&piece);
 
   fclose (sortie);
   free (contexte);
