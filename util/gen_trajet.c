@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include "gpc.h"
 
 typedef signed char i1;
@@ -15,6 +16,41 @@ typedef struct
   i1 tuiles[TRAJET_LG];
 } Trajet;
 
+#define MAGOT_LG 3
+typedef struct
+{
+  us nombres[MAGOT_LG];
+} Magot;
+
+typedef struct
+{
+  gpc_polygon forme;
+  gpc_vertex jalon;
+  i1 angle;
+} Piece;
+
+#define VOIE_LG (MAGOT_LG * 2 - 1)
+typedef struct
+{
+  us lg;
+  i1 choix[VOIE_LG];
+} Voie;
+
+typedef struct
+{
+  i1 angle;
+  gpc_vertex jalon;
+  gpc_polygon forme;
+  Magot magot;
+  Piece piece;
+  Voie voies;
+} Strate;
+
+typedef struct
+{
+  us lg;
+  Strate strates[TRAJET_LG];
+} Contexte;
 
 u8
 coder (const Trajet * trajet)
@@ -44,6 +80,75 @@ decoder (u8 code, Trajet * trajet)
       code /= 5;
     }
   trajet->tuiles[0] = 0;
+}
+
+
+void
+magot_init (Magot * magot)
+{
+  magot->nombres[0] = 7;
+  magot->nombres[1] = 6;
+  magot->nombres[2] = 6;
+}
+
+
+void
+transfo0 (gpc_vertex * sortie, const gpc_vertex * entree)
+{
+  sortie->x = entree->x;
+  sortie->y = entree->y;
+}
+
+void
+transfo1 (gpc_vertex * sortie, const gpc_vertex * entree)
+{
+  sortie->x = -entree->y;
+  sortie->y = entree->x;
+}
+
+
+void
+transfo2 (gpc_vertex * sortie, const gpc_vertex * entree)
+{
+  sortie->x = -entree->x;
+  sortie->y = -entree->y;
+}
+
+
+void
+transfo3 (gpc_vertex * sortie, const gpc_vertex * entree)
+{
+  sortie->x = entree->y;
+  sortie->y = -entree->x;
+}
+
+typedef void (Transfo) (gpc_vertex *, const gpc_vertex *);
+
+Transfo *const TRANSFOS[] = { &transfo0, &transfo0,
+  &transfo1, &transfo1,
+  &transfo2, &transfo2,
+  &transfo3, &transfo3,
+};
+
+
+void
+piece_init (Piece * piece, i1 type, i1 angle, const gpc_vertex * ecart)
+{
+  Transfo *const transfo = TRANSFOS[angle];
+
+  switch (type)
+    {
+    case -2:
+      break;
+    case -1:
+      break;
+    case 0:
+      break;
+    case 1:
+      break;
+    case 2:
+      break;
+    }
 }
 
 
@@ -146,34 +251,38 @@ lire_code (FILE * sortie)
 }
 
 
+void
+reprendre (Contexte * contexte, FILE * sortie)
+{
+  u8 code = lire_code (sortie);
+  Trajet trajet;
+
+  if (code == 0)
+    {
+      /* Valeur spéciale : ce trajet n'est pas constructible */
+      contexte->lg = 1;
+      contexte->strates[0].angle = 0;
+    }
+  else
+    {
+      decoder (code, &trajet);
+      afficher_trajet (stdout, &trajet);
+      fprintf (stdout, "\n");
+    }
+}
+
 int
 main (void)
 {
-  const Trajet t = { {0, -2, -2, -2, -2, -2, -2,
-                      -1, -1, -1, -1, -1, -1, 0,
-                      0, 0, 0, 0, 0, 0, 0}
-  };
-  Trajet t2 = { {1, 2, 3, 4, 5, 6, 7,
-                 8, 9, 10, 11, 12, 13, 14,
-                 15, 16, 17, 18, 19, 20, 21}
-  };
+  Contexte *contexte = malloc (sizeof (Contexte));
+  FILE *sortie = NULL;
 
-  u8 code = coder (&t);
-  FILE *sortie = ouvrir_fichier (SORTIE);
+  contexte->lg = 0;
+  sortie = ouvrir_fichier (SORTIE);
 
-  code = lire_code (sortie);
-  printf ("%llu\n", code);
-
-  code = coder (&t);
-  ecrire_code (sortie, code);
-
-  afficher_trajet (stdout, &t);
-  fprintf (stdout, "\n");
-
-  decoder (code, &t2);
-  afficher_trajet (stdout, &t2);
-  fprintf (stdout, "\n");
+  reprendre (contexte, sortie);
 
   fclose (sortie);
+  free (contexte);
   return 0;
 }
