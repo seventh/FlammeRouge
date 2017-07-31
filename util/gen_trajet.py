@@ -50,7 +50,7 @@ class ChargeurDeFormes(type):
                 for angle, sommets in angles.items():
                     pièces[int(t)][int(angle)] = sommets
             dct["PIÈCES"] = pièces
-                        
+
         return type.__new__(cls, name, parents, dct)
 
 
@@ -58,7 +58,7 @@ class Pièce(metaclass=ChargeurDeFormes):
 
     # Initialisé par «ChargeurDeFormes»
     PIÈCES = None
-    
+
     def __init__(self, forme, jalon, angle):
         self.forme = forme
         self.jalon = jalon

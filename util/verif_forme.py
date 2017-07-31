@@ -24,12 +24,10 @@ def dessiner(type, angle, forme):
         turtle.setposition(x, y)
     turtle.setposition(*forme[0])
     turtle.exitonclick()
-    
-    
+
 
 if __name__ == "__main__":
     formes = charger("formes.json")
     for type, angles in formes.items():
         for angle, forme in angles.items():
             dessiner(type, angle, forme)
-

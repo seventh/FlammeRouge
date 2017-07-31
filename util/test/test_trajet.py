@@ -44,7 +44,6 @@ class TestCombi(unittest.TestCase):
 
 class TestCodage(unittest.TestCase):
 
-
     def testAléatoire(self):
         code = random.randrange(trajet.CODE_GARDE)
         t = trajet.décoder(code)
