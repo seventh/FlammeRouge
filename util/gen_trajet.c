@@ -43,7 +43,7 @@ typedef struct
   gpc_vertex jalon;
   gpc_polygon forme;
   Magot magot;
-  Piece piece;
+  i1 piece;
   Voie voies;
 } Strate;
 
@@ -307,6 +307,29 @@ piece_free (Piece * piece)
   piece->forme.contour = NULL;
 }
 
+
+void
+strate_depart (Strate * strate)
+{
+  const gpc_vertex _origine = { 0, 0 };
+  Piece _piece;
+
+  piece_init (&_piece, 0, 0, &_origine);
+  strate->angle = _piece.angle;
+  strate->jalon = _piece.jalon;
+  strate->forme = _piece.forme;
+  magot_init (&strate->magot);
+  strate->piece = 0;
+  voie_init (&strate->voies, &strate->magot);
+}
+
+
+void
+strate_poser (Strate * strate, Strate * origine)
+{
+}
+
+
 void
 afficher_trajet (FILE * sortie, const Trajet * trajet)
 {
@@ -409,19 +432,30 @@ lire_code (FILE * sortie)
 void
 reprendre (Contexte * contexte, FILE * sortie)
 {
-  u8 code = lire_code (sortie);
-  Trajet trajet;
+  u8 _code = lire_code (sortie);
+  Trajet _trajet;
+  us _i = 0;
 
-  if (code == 0)
+  if (_code == 0)
     {
       /* Valeur spéciale : ce trajet n'est pas constructible */
       contexte->lg = 1;
-      contexte->strates[0].angle = 0;
+      strate_depart (contexte->strates);
+
+      for (_i = 1; _i < TRAJET_LG - 1; ++_i)
+        {
+          while (1)
+            {
+              strate_poser (contexte->strates + _i,
+                            contexte->strates + _i - 1);
+              break;
+            }
+        }
     }
   else
     {
-      decoder (code, &trajet);
-      afficher_trajet (stdout, &trajet);
+      decoder (_code, &_trajet);
+      afficher_trajet (stdout, &_trajet);
       fprintf (stdout, "\n");
     }
 }
