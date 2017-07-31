@@ -11,11 +11,38 @@ typedef size_t us;
 
 #define SORTIE "trajets-c.bin"
 
+/* ===========================================================================
+   TRAJET
+   ======================================================================== */
+
 #define TRAJET_LG 21
 typedef struct
 {
   i1 tuiles[TRAJET_LG];
 } Trajet;
+
+void
+trajet_afficher (FILE * sortie, const Trajet * trajet)
+{
+  us _i = 0;
+
+  fprintf (sortie, "[");
+  for (_i = 0; _i < TRAJET_LG; ++_i)
+    {
+      fprintf (sortie, "%d", trajet->tuiles[_i]);
+      if (_i == TRAJET_LG - 1)
+        {
+          fprintf (sortie, "]");
+        }
+      else
+        {
+          fprintf (sortie, ", ");
+        }
+    }
+}
+
+
+
 
 #define MAGOT_LG 3
 typedef struct
@@ -330,26 +357,6 @@ strate_poser (Strate * strate, Strate * origine)
 }
 
 
-void
-afficher_trajet (FILE * sortie, const Trajet * trajet)
-{
-  us _i = 0;
-
-  fprintf (sortie, "[");
-  for (_i = 0; _i < TRAJET_LG; ++_i)
-    {
-      fprintf (sortie, "%d", trajet->tuiles[_i]);
-      if (_i == TRAJET_LG - 1)
-        {
-          fprintf (sortie, "]");
-        }
-      else
-        {
-          fprintf (sortie, ", ");
-        }
-    }
-}
-
 
 /* Ouvre le fichier de résultat et le fait pointer sur le dernier
    enregistrement disponible
@@ -455,7 +462,7 @@ reprendre (Contexte * contexte, FILE * sortie)
   else
     {
       decoder (_code, &_trajet);
-      afficher_trajet (stdout, &_trajet);
+      trajet_afficher (stdout, &_trajet);
       fprintf (stdout, "\n");
     }
 }
