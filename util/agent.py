@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
-
 """Lecteur/Enregistreur d'entiers signés avec une certaine précision
 """
 
 import fractions
+import trajet
+import trajet2
 
 
 def _taille_bloc(nb_bits):
@@ -79,3 +79,39 @@ class Metteur:
             self._fichier.write(données)
             self._item = 0
             self._bloc = 0
+
+
+if __name__ == "__main__":
+    # Conversion
+    i = 0
+    with open("trajets.bin", "rb") as entrée, open("trajets2.bin", "wb") as sortie:
+        L = Lecteur(entrée, 48)
+        M = Metteur(sortie, 38)
+        while True:
+            valeur = L.lit()
+            if valeur is None:
+                break
+            t = trajet.décoder(valeur)
+            valeur2 = trajet2.coder(t)
+            M.met(valeur2)
+            i += 1
+            if i % 100000 == 0:
+                print("Conversion : {}".format(i))
+    print("Conversion : {}".format(i))
+
+    # Vérification
+    i = 0
+    with open("trajets2.bin", "rb") as entrée, open("trajets3.bin", "wb") as sortie:
+        L = Lecteur(entrée, 38)
+        M = Metteur(sortie, 48)
+        while True:
+            valeur = L.lit()
+            if valeur is None:
+                break
+            t = trajet2.décoder(valeur)
+            valeur2 = trajet.coder(t)
+            M.met(valeur2)
+            i += 1
+            if i % 100000 == 0:
+                print("Vérification : {}".format(i))
+    print("Vérification : {}".format(i))
