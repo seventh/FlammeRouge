@@ -11,7 +11,7 @@ import Polygon
 import agent
 import trajet
 
-TRAJETS = "trajets2.bin"
+TRAJETS = "trajets-python.bin"
 
 
 class Magot:
@@ -175,8 +175,6 @@ class Contexte:
         # Pose de deux «tuiles» parfaitement fictives, la preuve :
         retour._strates.append(42)
         retour._strates.append(42)
-        # On avance jusqu'au premier contexte viable
-        retour.prochain()
         return retour
 
     def __str__(self):
@@ -232,8 +230,9 @@ def reprendre():
 if __name__ == "__main__":
     contexte = reprendre()
     with open(TRAJETS, "ab") as sortie:
-        nb = 4 * sortie.tell() // 19
-        print("{} | {}".format(nb, contexte.trajet()))
+        nb = sortie.tell() // 6
+        if nb != 0:
+            print("{} | {}".format(nb, contexte.trajet()))
         auteur = agent.Metteur(sortie, trajet.NB_BITS)
         while contexte.prochain():
             t = contexte.trajet()

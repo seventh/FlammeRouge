@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import agent
-import trajet
+import trajet2
 
 
 ENTRÉE = "trajets2.bin"
@@ -12,20 +12,20 @@ if __name__ == "__main__":
     dernier_code = None
     dernier_trajet = None
     with open(ENTRÉE, "r+b") as entrée:
-        l = agent.Lecteur(entrée, trajet.NB_BITS)
+        l = agent.Lecteur(entrée, trajet2.NB_BITS)
         with open(SORTIE, "w+b") as sortie:
-            m = agent.Metteur(sortie, trajet.NB_BITS)
+            m = agent.Metteur(sortie, trajet2.NB_BITS)
 
             while True:
                 code = l.lit()
                 if code is None:
                     m.met(dernier_code)
                     break
-                elif code >= trajet.CODE_GARDE:
+                elif code >= trajet2.CODE_GARDE:
                     print("Code erroné : {}".format(code))
                     break
                 else:
-                    t = trajet.décoder(code)
+                    t = trajet2.décoder(code)
                     if dernier_code is None:
                         dernier_code = code
                         dernier_trajet = t

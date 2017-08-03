@@ -9,7 +9,7 @@ Trop simpliste, ce programme mange avant tout TOUTE la mémoire
 import logging
 
 import agent
-import trajet
+import trajet2
 
 
 ENTRÉE = "trajets2.bin"
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     logging.info("Lecture des codes")
     with open(ENTRÉE, "r+b") as entrée:
-        l = agent.Lecteur(entrée, trajet.NB_BITS)
+        l = agent.Lecteur(entrée, trajet2.NB_BITS)
         while True:
             code = l.lit()
             if code is None:
@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     logging.info("Écriture des codes")
     with open(SORTIE, "w+b") as sortie:
-        m = agent.Metteur(sortie, trajet.NB_BITS)
+        m = agent.Metteur(sortie, trajet2.NB_BITS)
         for code in codes:
             m.met(code)
         m.met(dernier)
