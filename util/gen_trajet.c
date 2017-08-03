@@ -666,8 +666,9 @@ main (void)
   if (nb != 0)
     {
       contexte_trajet (&trajet, &contexte);
-      fprintf (stdout, "%u | ", nb);
+      fprintf (stdout, "%zu | ", nb);
       trajet_afficher (stdout, &trajet);
+      fprintf (stdout, "\n");
       fflush (stdout);
     }
 
@@ -680,7 +681,7 @@ main (void)
       nb += 1;
       if (nb % 100000 == 0)
         {
-          fprintf (stdout, "%.1fM | ", (float) nb / 10000);
+          fprintf (stdout, "%.1fM | ", (float) nb / 1000000);
           trajet_afficher (stdout, &trajet);
           fprintf (stdout, "\n");
           fflush (stdout);
