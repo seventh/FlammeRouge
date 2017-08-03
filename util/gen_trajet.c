@@ -42,46 +42,8 @@ trajet_afficher (FILE * sortie, const Trajet * trajet)
 }
 
 
-
-
-#define MAGOT_LG 3
-typedef struct
-{
-  us nombres[MAGOT_LG];
-} Magot;
-
-typedef struct
-{
-  gpc_polygon forme;
-  gpc_vertex jalon;
-  i1 angle;
-} Piece;
-
-#define VOIE_LG (MAGOT_LG * 2 - 1)
-typedef struct
-{
-  us lg;
-  i1 choix[VOIE_LG];
-} Voie;
-
-typedef struct
-{
-  i1 angle;
-  gpc_vertex jalon;
-  gpc_polygon forme;
-  Magot magot;
-  i1 piece;
-  Voie voies;
-} Strate;
-
-typedef struct
-{
-  us lg;
-  Strate strates[TRAJET_LG];
-} Contexte;
-
 u8
-coder (const Trajet * trajet)
+trajet_coder (const Trajet * trajet)
 {
   u8 _retour = 0;
   us _i = 0;
@@ -97,7 +59,7 @@ coder (const Trajet * trajet)
 
 
 void
-decoder (u8 code, Trajet * trajet)
+trajet_decoder (u8 code, Trajet * trajet)
 {
   us _i = 0;
 
@@ -111,6 +73,94 @@ decoder (u8 code, Trajet * trajet)
 }
 
 
+/* Ouvre le fichier de résultat et le fait pointer sur le dernier
+   enregistrement disponible
+ */
+FILE *
+trajet_ouvrir_fichier (const char *nom)
+{
+  FILE *_retour = NULL;
+  us _taille = 0;
+
+  _retour = fopen (nom, "r+b");
+  if (_retour == NULL)
+    {
+      _retour = fopen (nom, "w+b");
+    }
+  else
+    {
+      fseek (_retour, 0, SEEK_END);
+      _taille = ftell (_retour);
+
+      if (_taille < 6)
+        {
+          fseek (_retour, 0, SEEK_SET);
+        }
+      else
+        {
+          fseek (_retour, -(6 + (_taille % 6)), SEEK_CUR);
+        }
+    }
+
+  return _retour;
+}
+
+
+void
+trajet_ecrire_code (FILE * sortie, u8 code)
+{
+  /* RAPPELS :
+     - Un code tient sur 6 octets
+     - Il est écrit au format gros-boutisme
+   */
+  const u8 _masque = 0xFF;
+  u1 _donnee = 0;
+  us _i;
+
+  for (_i = 0; _i < 6; ++_i)
+    {
+      _donnee = (code >> (8 * (5 - _i))) & _masque;
+      fwrite (&_donnee, 1, 1, sortie);
+    }
+}
+
+
+u8
+trajet_lire_code (FILE * sortie)
+{
+  u8 _retour = 0;
+  u1 _donnees[6];
+  us _i = 0;
+  us _nb = 0;
+
+  _nb = fread (&_donnees, 1, sizeof (_donnees), sortie);
+  if (_nb < sizeof (_donnees))
+    {
+      fseek (sortie, -_nb, SEEK_CUR);
+    }
+  else
+    {
+      for (_i = 0; _i < 6; ++_i)
+        {
+          _retour <<= 8;
+          _retour += _donnees[_i];
+        }
+    }
+
+  return _retour;
+}
+
+
+/* ===========================================================================
+   MAGOT
+   ======================================================================== */
+
+#define MAGOT_LG 3
+typedef struct
+{
+  us nombres[MAGOT_LG];
+} Magot;
+
 void
 magot_init (Magot * magot)
 {
@@ -123,43 +173,23 @@ magot_init (Magot * magot)
 void
 magot_poser (Magot * magot, const Magot * reference, i1 type)
 {
+  const us clef = abs (type);
+
   memcpy (magot, reference, sizeof (Magot));
-  magot->nombres[abs (type)] -= 1;
+  magot->nombres[clef] -= 1;
 }
 
 
-void
-voie_init (Voie * voie, const Magot * magot)
+/* ===========================================================================
+   PIÈCE
+   ======================================================================== */
+
+typedef struct
 {
-  voie->lg = 0;
-
-  if (magot->nombres[2] != 0)
-    {
-      voie->choix[voie->lg] = 2;
-      voie->lg += 1;
-    }
-  if (magot->nombres[1] != 0)
-    {
-      voie->choix[voie->lg] = 1;
-      voie->lg += 1;
-    }
-  if (magot->nombres[0] != 0)
-    {
-      voie->choix[voie->lg] = 0;
-      voie->lg += 1;
-    }
-  if (magot->nombres[1] != 0)
-    {
-      voie->choix[voie->lg] = -1;
-      voie->lg += 1;
-    }
-  if (magot->nombres[2] != 0)
-    {
-      voie->choix[voie->lg] = -2;
-      voie->lg += 1;
-    }
-}
-
+  gpc_polygon forme;
+  gpc_vertex jalon;
+  i1 angle;
+} Piece;
 
 void
 transfo0 (gpc_vertex * sortie, const gpc_vertex * entree,
@@ -307,21 +337,22 @@ piece_init (Piece * piece, i1 type, i1 angle, const gpc_vertex * ecart)
   Transfo *const transfo = TRANSFOS[angle];
   const gpc_vertex_list *const sommets = SOMMETS[type + 2][angle % 2];
   int _i = 0;
+  gpc_vertex_list contour;
 
-  piece->forme.num_contours = 1;
-  piece->forme.hole = NULL;
-  piece->forme.contour = malloc (sizeof (gpc_vertex_list));
-  piece->forme.contour->num_vertices = sommets->num_vertices;
-  piece->forme.contour->vertex =
-    malloc (sommets->num_vertices * sizeof (gpc_vertex));
+  contour.num_vertices = sommets->num_vertices;
+  contour.vertex = malloc (sommets->num_vertices * sizeof (gpc_vertex_list));
   for (_i = 0; _i < sommets->num_vertices; ++_i)
     {
-      (*transfo) (piece->forme.contour->vertex + _i, sommets->vertex + _i,
-                  ecart);
+      (*transfo) (contour.vertex + _i, sommets->vertex + _i, ecart);
     }
 
-  memcpy (&piece->jalon, piece->forme.contour->vertex, sizeof (gpc_vertex));
+  memset (&piece->forme, 0, sizeof (gpc_polygon));
+  gpc_add_contour (&piece->forme, &contour, 0);
+
+  memcpy (&piece->jalon, contour.vertex, sizeof (gpc_vertex));
   piece->angle = (angle + type) % 8;
+
+  free (contour.vertex);
 }
 
 
@@ -329,160 +360,291 @@ void
 piece_free (Piece * piece)
 {
   gpc_free_polygon (&piece->forme);
-  piece->forme.num_contours = 0;
-  piece->forme.hole = NULL;
-  piece->forme.contour = NULL;
 }
 
+
+/* ===========================================================================
+   VOIE
+   ======================================================================== */
+
+#define VOIE_LG (MAGOT_LG * 2 - 1)
+typedef struct
+{
+  us lg;
+  i1 tuiles[VOIE_LG];
+} Voie;
+
+void
+voie_init (Voie * voie, const Magot * magot)
+{
+  voie->lg = 0;
+
+  if (magot->nombres[2] != 0)
+    {
+      voie->tuiles[voie->lg] = 2;
+      voie->lg += 1;
+    }
+  if (magot->nombres[1] != 0)
+    {
+      voie->tuiles[voie->lg] = 1;
+      voie->lg += 1;
+    }
+  if (magot->nombres[0] != 0)
+    {
+      voie->tuiles[voie->lg] = 0;
+      voie->lg += 1;
+    }
+  if (magot->nombres[1] != 0)
+    {
+      voie->tuiles[voie->lg] = -1;
+      voie->lg += 1;
+    }
+  if (magot->nombres[2] != 0)
+    {
+      voie->tuiles[voie->lg] = -2;
+      voie->lg += 1;
+    }
+}
+
+
+/* ===========================================================================
+   STRATE
+   ======================================================================== */
+
+typedef struct
+{
+  Piece piece;
+  Magot magot;
+  i1 tuile;
+  Voie voies;
+} Strate;
 
 void
 strate_depart (Strate * strate)
 {
   const gpc_vertex _origine = { 0, 0 };
-  Piece _piece;
 
-  piece_init (&_piece, 0, 0, &_origine);
-  strate->angle = _piece.angle;
-  strate->jalon = _piece.jalon;
-  strate->forme = _piece.forme;
+  piece_init (&strate->piece, 0, 0, &_origine);
   magot_init (&strate->magot);
-  strate->piece = 0;
+  strate->tuile = 0;
   voie_init (&strate->voies, &strate->magot);
 }
 
 
-void
-strate_poser (Strate * strate, Strate * origine)
+int
+strate_arrivee (Strate * strate, Strate * origine)
 {
-}
+  int _retour = 1;
+  Piece piece;
+  gpc_polygon croisement;
 
-
-
-/* Ouvre le fichier de résultat et le fait pointer sur le dernier
-   enregistrement disponible
- */
-FILE *
-ouvrir_fichier (const char *nom)
-{
-  FILE *_retour = NULL;
-  us _taille = 0;
-
-  _retour = fopen (nom, "r+b");
-  if (_retour == NULL)
+  piece_init (&piece, 0, origine->piece.angle, &origine->piece.jalon);
+  memset (&croisement, 0, sizeof (gpc_polygon));
+  gpc_polygon_clip (GPC_INT, &piece.forme, &origine->piece.forme,
+                    &croisement);
+  if (croisement.num_contours == 0)
     {
-      _retour = fopen (nom, "w+b");
+      memset (&strate->piece.forme, 0, sizeof (gpc_polygon));
+      gpc_polygon_clip (GPC_UNION, &piece.forme, &origine->piece.forme,
+                        &strate->piece.forme);
+      strate->piece.jalon = piece.jalon;
+      strate->piece.angle = piece.angle;
+      memset (&strate->magot, 0, sizeof (Magot));
+      strate->tuile = 0;
+      strate->voies.lg = 0;
     }
   else
     {
-      fseek (_retour, 0, SEEK_END);
-      _taille = ftell (_retour);
+      _retour = 0;
+      gpc_free_polygon (&croisement);
+    }
+  piece_free (&piece);
 
-      if (_taille < 6)
+  return _retour;
+}
+
+
+int
+strate_poser (Strate * strate, Strate * origine)
+{
+  int _retour = 0;
+  i1 tuile = 0;
+  Piece piece;
+  gpc_polygon croisement;
+
+  while (origine->voies.lg != 0)
+    {
+      origine->voies.lg -= 1;
+      tuile = origine->voies.tuiles[origine->voies.lg];
+
+      piece_init (&piece, tuile, origine->piece.angle, &origine->piece.jalon);
+      memset (&croisement, 0, sizeof (gpc_polygon));
+      gpc_polygon_clip (GPC_INT, &piece.forme, &origine->piece.forme,
+                        &croisement);
+      if (croisement.num_contours == 0)
         {
-          fseek (_retour, 0, SEEK_SET);
+          memset (&strate->piece.forme, 0, sizeof (gpc_polygon));
+          gpc_polygon_clip (GPC_UNION, &piece.forme, &origine->piece.forme,
+                            &strate->piece.forme);
+          strate->piece.jalon = piece.jalon;
+          strate->piece.angle = piece.angle;
+          memset (&strate->magot, 0, sizeof (Magot));
+          strate->tuile = 0;
+          strate->voies.lg = 0;
+          piece_free (&piece);
+          break;
         }
       else
         {
-          fseek (_retour, -(6 + (_taille % 6)), SEEK_CUR);
+          _retour = 0;
+          gpc_free_polygon (&croisement);
+          piece_free (&piece);
         }
     }
-
   return _retour;
 }
 
 
+/* ===========================================================================
+   CONTEXTE
+   ======================================================================== */
+
+typedef struct
+{
+  us lg;
+  Strate strates[TRAJET_LG];
+} Contexte;
+
+
 void
-ecrire_code (FILE * sortie, u8 code)
+contexte_trajet (Trajet * trajet, const Contexte * contexte)
 {
-  /* RAPPELS :
-     - Un code tient sur 6 octets
-     - Il est écrit au format gros-boutisme
-   */
-  const u8 _masque = 0xFF;
-  u1 _donnee = 0;
-  us _i;
-
-  for (_i = 0; _i < 6; ++_i)
-    {
-      _donnee = (code >> (8 * (5 - _i))) & _masque;
-      fwrite (&_donnee, 1, 1, sortie);
-    }
-}
-
-
-u8
-lire_code (FILE * sortie)
-{
-  u8 _retour = 0;
-  u1 _donnees[6];
   us _i = 0;
-  us _nb = 0;
 
-  _nb = fread (&_donnees, 1, sizeof (_donnees), sortie);
-  if (_nb < sizeof (_donnees))
+  for (_i = 0; _i < contexte->lg; ++_i)
     {
-      fseek (sortie, -_nb, SEEK_CUR);
+      trajet->tuiles[_i] = contexte->strates[_i].tuile;
     }
-  else
-    {
-      for (_i = 0; _i < 6; ++_i)
-        {
-          _retour <<= 8;
-          _retour += _donnees[_i];
-        }
-    }
-
-  return _retour;
 }
 
 
 void
-reprendre (Contexte * contexte, FILE * sortie)
+contexte_reprendre (Contexte * contexte, FILE * sortie)
 {
-  u8 _code = lire_code (sortie);
+  u8 _code = trajet_lire_code (sortie);
   Trajet _trajet;
   us _i = 0;
 
+  memset (contexte, 0, sizeof (Contexte));
   if (_code == 0)
     {
       /* Valeur spéciale : ce trajet n'est pas constructible */
       contexte->lg = 1;
       strate_depart (contexte->strates);
 
-      for (_i = 1; _i < TRAJET_LG - 1; ++_i)
-        {
-          while (1)
-            {
-              strate_poser (contexte->strates + _i,
-                            contexte->strates + _i - 1);
-              break;
-            }
-        }
+      /* On pose deux tuiles fictives */
+      strate_arrivee (contexte->strates + 1, contexte->strates);
+      strate_arrivee (contexte->strates + 2, contexte->strates);
+      contexte->lg += 2;
     }
   else
     {
-      decoder (_code, &_trajet);
+      trajet_decoder (_code, &_trajet);
       trajet_afficher (stdout, &_trajet);
       fprintf (stdout, "\n");
     }
 }
 
+
+int
+contexte_prochain (Contexte * contexte)
+{
+  int _retour = 1;
+  int statut = 0;
+
+  /* Suppression de l'arrivée */
+  contexte->lg -= 1;
+  piece_free (&contexte->strates[contexte->lg].piece);
+
+  /* Itérations de recherche jusqu'au prochain contexte complet */
+  while (1)
+    {
+      /* Suppression de la dernière strate variable */
+      contexte->lg -= 1;
+      piece_free (&contexte->strates[contexte->lg].piece);
+
+      while (contexte->lg > 0 && contexte->lg < TRAJET_LG - 1)
+        {
+          statut =
+            strate_poser (&contexte->strates[contexte->lg],
+                          &contexte->strates[contexte->lg - 1]);
+          if (statut == 1)
+            {
+              contexte->lg += 1;
+            }
+          else
+            {
+              contexte->lg -= 1;
+              piece_free (&contexte->strates[contexte->lg].piece);
+            }
+        }
+      if (contexte->lg == 0)
+        {
+          _retour = 0;
+        }
+      else
+        {
+          /* Ajout de l'arrivée si possible */
+          statut = strate_arrivee (&contexte->strates[contexte->lg],
+                                   &contexte->strates[contexte->lg - 1]);
+          if (statut)
+            {
+              contexte->lg += 1;
+              break;
+            }
+        }
+    }
+
+  return _retour;
+}
+
+
+/* ===========================================================================
+   PROGRAMME PRINCIPAL
+   ======================================================================== */
+
 int
 main (void)
 {
-  Contexte *contexte = malloc (sizeof (Contexte));
+  Contexte contexte;
   FILE *sortie = NULL;
-  Piece piece;
-  const gpc_vertex origine = { 0, 0 };
+  Trajet trajet;
+  us nb = 0;
+  u8 code = 0;
 
-  contexte->lg = 0;
-  sortie = ouvrir_fichier (SORTIE);
+  contexte.lg = 0;
+  sortie = trajet_ouvrir_fichier (SORTIE);
 
-  reprendre (contexte, sortie);
-  piece_init (&piece, -2, 5, &origine);
-  piece_free (&piece);
+  contexte_reprendre (&contexte, sortie);
+  nb = ftell (sortie) / 6;
+  contexte_trajet (&trajet, &contexte);
+  fprintf (stdout, "%ld | ", nb);
+  trajet_afficher (stdout, &trajet);
+
+  while (contexte_prochain (&contexte))
+    {
+      contexte_trajet (&trajet, &contexte);
+      code = trajet_coder (&trajet);
+      trajet_ecrire_code (sortie, code);
+
+      nb += 1;
+      if (nb % 100000 == 0)
+        {
+          fprintf (stdout, "%.1fM | ", (float) nb / 10000);
+          trajet_afficher (stdout, &trajet);
+        }
+    }
 
   fclose (sortie);
-  free (contexte);
   return 0;
 }
