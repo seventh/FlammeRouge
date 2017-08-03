@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -340,7 +341,7 @@ piece_init (Piece * piece, i1 type, i1 angle, const gpc_vertex * ecart)
   gpc_vertex_list contour;
 
   contour.num_vertices = sommets->num_vertices;
-  contour.vertex = malloc (sommets->num_vertices * sizeof (gpc_vertex_list));
+  contour.vertex = malloc (sommets->num_vertices * sizeof (gpc_vertex));
   for (_i = 0; _i < sommets->num_vertices; ++_i)
     {
       (*transfo) (contour.vertex + _i, sommets->vertex + _i, ecart);
@@ -350,7 +351,7 @@ piece_init (Piece * piece, i1 type, i1 angle, const gpc_vertex * ecart)
   gpc_add_contour (&piece->forme, &contour, 0);
 
   memcpy (&piece->jalon, contour.vertex, sizeof (gpc_vertex));
-  piece->angle = (angle + type) % 8;
+  piece->angle = (8 + angle + type) % 8;
 
   free (contour.vertex);
 }
@@ -447,7 +448,7 @@ strate_arrivee (Strate * strate, Strate * origine)
       memset (&strate->piece.forme, 0, sizeof (gpc_polygon));
       gpc_polygon_clip (GPC_UNION, &piece.forme, &origine->piece.forme,
                         &strate->piece.forme);
-      strate->piece.jalon = piece.jalon;
+      memcpy (&strate->piece.jalon, &piece.jalon, sizeof (gpc_vertex));
       strate->piece.angle = piece.angle;
       memset (&strate->magot, 0, sizeof (Magot));
       strate->tuile = 0;
@@ -483,15 +484,17 @@ strate_poser (Strate * strate, Strate * origine)
                         &croisement);
       if (croisement.num_contours == 0)
         {
+          /* in fine, on doit pouvoir supprimer cette ligne */
           memset (&strate->piece.forme, 0, sizeof (gpc_polygon));
           gpc_polygon_clip (GPC_UNION, &piece.forme, &origine->piece.forme,
                             &strate->piece.forme);
-          strate->piece.jalon = piece.jalon;
+          memcpy (&strate->piece.jalon, &piece.jalon, sizeof (gpc_vertex));
           strate->piece.angle = piece.angle;
-          memset (&strate->magot, 0, sizeof (Magot));
-          strate->tuile = 0;
-          strate->voies.lg = 0;
+          magot_poser (&strate->magot, &origine->magot, tuile);
+          strate->tuile = tuile;
+          voie_init (&strate->voies, &strate->magot);
           piece_free (&piece);
+          _retour = 1;
           break;
         }
       else
@@ -536,12 +539,12 @@ contexte_reprendre (Contexte * contexte, FILE * sortie)
   us _i = 0;
 
   memset (contexte, 0, sizeof (Contexte));
+  contexte->lg = 1;
+  strate_depart (contexte->strates);
+
   if (_code == 0)
     {
       /* Valeur spéciale : ce trajet n'est pas constructible */
-      contexte->lg = 1;
-      strate_depart (contexte->strates);
-
       /* On pose deux tuiles fictives */
       strate_arrivee (contexte->strates + 1, contexte->strates);
       strate_arrivee (contexte->strates + 2, contexte->strates);
@@ -550,8 +553,27 @@ contexte_reprendre (Contexte * contexte, FILE * sortie)
   else
     {
       trajet_decoder (_code, &_trajet);
-      trajet_afficher (stdout, &_trajet);
-      fprintf (stdout, "\n");
+
+      for (_i = 1; _i < TRAJET_LG - 1; ++_i)
+        {
+          while (1)
+            {
+              strate_poser (&contexte->strates[_i],
+                            &contexte->strates[_i - 1]);
+              if (contexte->strates[_i].tuile != _trajet.tuiles[_i])
+                {
+                  piece_free (&contexte->strates[_i].piece);
+                }
+              else
+                {
+                  break;
+                }
+            }
+        }
+
+      strate_arrivee (&contexte->strates[TRAJET_LG - 1],
+                      &contexte->strates[TRAJET_LG - 2]);
+      contexte->lg = TRAJET_LG;
     }
 }
 
@@ -613,6 +635,15 @@ contexte_prochain (Contexte * contexte)
    PROGRAMME PRINCIPAL
    ======================================================================== */
 
+int cont = 1;
+
+void
+gestionnaire (int signal __attribute__ ((unused)))
+{
+  cont = 0;
+}
+
+
 int
 main (void)
 {
@@ -621,17 +652,26 @@ main (void)
   Trajet trajet;
   us nb = 0;
   u8 code = 0;
+  struct sigaction action;
+
+  memset (&action, 0, sizeof (struct sigaction));
+  action.sa_handler = &gestionnaire;
+  sigaction (SIGINT, &action, NULL);
 
   contexte.lg = 0;
   sortie = trajet_ouvrir_fichier (SORTIE);
 
   contexte_reprendre (&contexte, sortie);
   nb = ftell (sortie) / 6;
-  contexte_trajet (&trajet, &contexte);
-  fprintf (stdout, "%ld | ", nb);
-  trajet_afficher (stdout, &trajet);
+  if (nb != 0)
+    {
+      contexte_trajet (&trajet, &contexte);
+      fprintf (stdout, "%u | ", nb);
+      trajet_afficher (stdout, &trajet);
+      fflush (stdout);
+    }
 
-  while (contexte_prochain (&contexte))
+  while (contexte_prochain (&contexte) && cont != 0)
     {
       contexte_trajet (&trajet, &contexte);
       code = trajet_coder (&trajet);
@@ -642,6 +682,8 @@ main (void)
         {
           fprintf (stdout, "%.1fM | ", (float) nb / 10000);
           trajet_afficher (stdout, &trajet);
+          fprintf (stdout, "\n");
+          fflush (stdout);
         }
     }
 
