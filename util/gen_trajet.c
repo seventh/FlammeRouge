@@ -193,40 +193,65 @@ typedef struct
 } Piece;
 
 void
-transfo0 (gpc_vertex * sortie, const gpc_vertex * entree,
+transfo0 (gpc_vertex_list * sortie, const gpc_vertex_list * entree,
           const gpc_vertex * ecart)
 {
-  sortie->x = ecart->x + entree->x;
-  sortie->y = ecart->y + entree->y;
+  int _i = 0;
+
+  while (_i < entree->num_vertices)
+    {
+      sortie->vertex[_i].x = ecart->x + entree->vertex[_i].x;
+      sortie->vertex[_i].y = ecart->y + entree->vertex[_i].y;
+      ++_i;
+    }
 }
 
 void
-transfo1 (gpc_vertex * sortie, const gpc_vertex * entree,
+transfo1 (gpc_vertex_list * sortie, const gpc_vertex_list * entree,
           const gpc_vertex * ecart)
 {
-  sortie->x = ecart->x - entree->y;
-  sortie->y = ecart->y + entree->x;
+  int _i = 0;
+
+  while (_i < entree->num_vertices)
+    {
+      sortie->vertex[_i].x = ecart->x - entree->vertex[_i].y;
+      sortie->vertex[_i].y = ecart->y + entree->vertex[_i].x;
+      ++_i;
+    }
 }
 
 
 void
-transfo2 (gpc_vertex * sortie, const gpc_vertex * entree,
+transfo2 (gpc_vertex_list * sortie, const gpc_vertex_list * entree,
           const gpc_vertex * ecart)
 {
-  sortie->x = ecart->x - entree->x;
-  sortie->y = ecart->y - entree->y;
+  int _i = 0;
+
+  while (_i < entree->num_vertices)
+    {
+      sortie->vertex[_i].x = ecart->x - entree->vertex[_i].x;
+      sortie->vertex[_i].y = ecart->y - entree->vertex[_i].y;
+      ++_i;
+    }
 }
 
 
 void
-transfo3 (gpc_vertex * sortie, const gpc_vertex * entree,
+transfo3 (gpc_vertex_list * sortie, const gpc_vertex_list * entree,
           const gpc_vertex * ecart)
 {
-  sortie->x = ecart->x + entree->y;
-  sortie->y = ecart->y - entree->x;
+  int _i = 0;
+
+  while (_i < entree->num_vertices)
+    {
+      sortie->vertex[_i].x = ecart->x + entree->vertex[_i].y;
+      sortie->vertex[_i].y = ecart->y - entree->vertex[_i].x;
+      ++_i;
+    }
 }
 
-typedef void (Transfo) (gpc_vertex *, const gpc_vertex *, const gpc_vertex *);
+typedef void (Transfo) (gpc_vertex_list *, const gpc_vertex_list *,
+                        const gpc_vertex *);
 
 Transfo *const TRANSFOS[] = { &transfo0, &transfo0,
   &transfo1, &transfo1,
@@ -337,15 +362,11 @@ piece_init (Piece * piece, i1 type, i1 angle, const gpc_vertex * ecart)
 {
   Transfo *const transfo = TRANSFOS[angle];
   const gpc_vertex_list *const sommets = SOMMETS[type + 2][angle % 2];
-  int _i = 0;
   gpc_vertex_list contour;
 
   contour.num_vertices = sommets->num_vertices;
   contour.vertex = malloc (sommets->num_vertices * sizeof (gpc_vertex));
-  for (_i = 0; _i < sommets->num_vertices; ++_i)
-    {
-      (*transfo) (contour.vertex + _i, sommets->vertex + _i, ecart);
-    }
+  (*transfo) (&contour, sommets, ecart);
 
   memset (&piece->forme, 0, sizeof (gpc_polygon));
   gpc_add_contour (&piece->forme, &contour, 0);
