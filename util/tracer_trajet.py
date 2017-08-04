@@ -45,7 +45,11 @@ if __name__ == "__main__":
     angle = 0
 
     for tuile in sys.argv[1:]:
-        pièce = gen_trajet.Pièce.neuve(int(tuile), angle, pos)
+        if tuile[-1] == ',':
+            val = int(tuile[:-1])
+        else:
+            val = int(tuile)
+        pièce = gen_trajet.Pièce.neuve(val, angle, pos)
         dessiner(pièce.forme)
         pos = pièce.jalon
         angle = pièce.angle
