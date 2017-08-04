@@ -472,6 +472,7 @@ strate_poser (Strate * strate, Strate * origine)
   i1 tuile = 0;
   Piece piece;
   gpc_polygon croisement;
+  int _i = 0;
 
   while (origine->voies.lg != 0)
     {
@@ -486,8 +487,16 @@ strate_poser (Strate * strate, Strate * origine)
         {
           /* in fine, on doit pouvoir supprimer cette ligne */
           memset (&strate->piece.forme, 0, sizeof (gpc_polygon));
-          gpc_polygon_clip (GPC_UNION, &piece.forme, &origine->piece.forme,
-                            &strate->piece.forme);
+          for (_i = 0; _i < piece.forme.num_contours; ++_i)
+            {
+              gpc_add_contour (&strate->piece.forme, &piece.forme.contour[_i],
+                               0);
+            }
+          for (_i = 0; _i < origine->piece.forme.num_contours; ++_i)
+            {
+              gpc_add_contour (&strate->piece.forme,
+                               &origine->piece.forme.contour[_i], 0);
+            }
           memcpy (&strate->piece.jalon, &piece.jalon, sizeof (gpc_vertex));
           strate->piece.angle = piece.angle;
           magot_poser (&strate->magot, &origine->magot, tuile);
