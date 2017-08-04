@@ -364,6 +364,37 @@ piece_free (Piece * piece)
 }
 
 
+int
+piece_fusionner (Piece * res, Piece * tuile, Piece * trajet)
+{
+  int _retour = 0;
+  gpc_polygon _croisement;
+  int _i = 0;
+
+  memset (&_croisement, 0, sizeof (gpc_polygon));
+  gpc_polygon_clip (GPC_INT, &tuile->forme, &trajet->forme, &_croisement);
+  if (_croisement.num_contours != 0)
+    {
+      gpc_free_polygon (&_croisement);
+    }
+  else
+    {
+      _retour = 1;
+      for (_i = 0; _i < tuile->forme.num_contours; ++_i)
+        {
+          gpc_add_contour (&res->forme, tuile->forme.contour + _i, 0);
+        }
+      for (_i = 0; _i < trajet->forme.num_contours; ++_i)
+        {
+          gpc_add_contour (&res->forme, trajet->forme.contour + _i, 0);
+        }
+      memcpy (&res->jalon, &tuile->jalon, sizeof (gpc_vertex));
+      res->angle = tuile->angle;
+    }
+
+  return _retour;
+}
+
 /* ===========================================================================
    VOIE
    ======================================================================== */
@@ -435,31 +466,21 @@ strate_depart (Strate * strate)
 int
 strate_arrivee (Strate * strate, Strate * origine)
 {
-  int _retour = 1;
-  Piece piece;
-  gpc_polygon croisement;
+  int _retour = 0;
+  Piece _piece;
+  int _statut = 0;
 
-  piece_init (&piece, 0, origine->piece.angle, &origine->piece.jalon);
-  memset (&croisement, 0, sizeof (gpc_polygon));
-  gpc_polygon_clip (GPC_INT, &piece.forme, &origine->piece.forme,
-                    &croisement);
-  if (croisement.num_contours == 0)
+  piece_init (&_piece, 0, origine->piece.angle, &origine->piece.jalon);
+  memset (&strate->piece.forme, 0, sizeof (gpc_polygon));
+  _statut = piece_fusionner (&strate->piece, &_piece, &origine->piece);
+  piece_free (&_piece);
+  if (_statut)
     {
-      memset (&strate->piece.forme, 0, sizeof (gpc_polygon));
-      gpc_polygon_clip (GPC_UNION, &piece.forme, &origine->piece.forme,
-                        &strate->piece.forme);
-      memcpy (&strate->piece.jalon, &piece.jalon, sizeof (gpc_vertex));
-      strate->piece.angle = piece.angle;
+      _retour = 1;
       memset (&strate->magot, 0, sizeof (Magot));
       strate->tuile = 0;
       strate->voies.lg = 0;
     }
-  else
-    {
-      _retour = 0;
-      gpc_free_polygon (&croisement);
-    }
-  piece_free (&piece);
 
   return _retour;
 }
@@ -469,48 +490,27 @@ int
 strate_poser (Strate * strate, Strate * origine)
 {
   int _retour = 0;
-  i1 tuile = 0;
-  Piece piece;
-  gpc_polygon croisement;
-  int _i = 0;
+  i1 _tuile = 0;
+  Piece _piece;
+  int _statut = 0;
 
   while (origine->voies.lg != 0)
     {
       origine->voies.lg -= 1;
-      tuile = origine->voies.tuiles[origine->voies.lg];
+      _tuile = origine->voies.tuiles[origine->voies.lg];
 
-      piece_init (&piece, tuile, origine->piece.angle, &origine->piece.jalon);
-      memset (&croisement, 0, sizeof (gpc_polygon));
-      gpc_polygon_clip (GPC_INT, &piece.forme, &origine->piece.forme,
-                        &croisement);
-      if (croisement.num_contours == 0)
+      piece_init (&_piece, _tuile, origine->piece.angle,
+                  &origine->piece.jalon);
+      memset (&strate->piece.forme, 0, sizeof (gpc_polygon));
+      _statut = piece_fusionner (&strate->piece, &_piece, &origine->piece);
+      piece_free (&_piece);
+      if (_statut)
         {
-          /* in fine, on doit pouvoir supprimer cette ligne */
-          memset (&strate->piece.forme, 0, sizeof (gpc_polygon));
-          for (_i = 0; _i < piece.forme.num_contours; ++_i)
-            {
-              gpc_add_contour (&strate->piece.forme, &piece.forme.contour[_i],
-                               0);
-            }
-          for (_i = 0; _i < origine->piece.forme.num_contours; ++_i)
-            {
-              gpc_add_contour (&strate->piece.forme,
-                               &origine->piece.forme.contour[_i], 0);
-            }
-          memcpy (&strate->piece.jalon, &piece.jalon, sizeof (gpc_vertex));
-          strate->piece.angle = piece.angle;
-          magot_poser (&strate->magot, &origine->magot, tuile);
-          strate->tuile = tuile;
-          voie_init (&strate->voies, &strate->magot);
-          piece_free (&piece);
           _retour = 1;
+          magot_poser (&strate->magot, &origine->magot, _tuile);
+          strate->tuile = _tuile;
+          voie_init (&strate->voies, &strate->magot);
           break;
-        }
-      else
-        {
-          _retour = 0;
-          gpc_free_polygon (&croisement);
-          piece_free (&piece);
         }
     }
   return _retour;
