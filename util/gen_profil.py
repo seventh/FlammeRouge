@@ -1,13 +1,23 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
-"""Générateur de l'ensemble des circuits possibles
-
-Se base sur la sortie de gen_circuit.py, qui fournit les tracés
+"""Générateur de l'ensemble des circuits possibles pour un trajet donné
 """
 
+import collections
 import itertools
 import json
+import os
 import sys
+
+
+def profil(étape, courses):
+    retour = str()
+
+    for tronçon in étape:
+        cases = courses["tronçons"][tronçon]
+        retour += code(cases, courses)
+    return retour
 
 
 def code(tronçon, entrée):
@@ -25,14 +35,11 @@ def code(tronçon, entrée):
     return retour
 
 
-def dénombrer_variantes(chemin, type, card):
+def dénombrer_variantes(parcours, type, card):
     """Identifie les combinaisons différentes de tuiles d'un même type.
 
     En cas de doublon, l'ordre alphabétique est toujours privilégié
     """
-    with open(chemin, "rt") as entrée:
-        parcours = json.load(entrée)
-
     codes = dict()
     tronçons = str()
     negs = dict()
@@ -107,14 +114,90 @@ def dénombrer_variantes(chemin, type, card):
                 signatures[signature] = p
 
     for signature in sorted(signatures, key=lambda s: clef(signatures[s])):
-        print(signature, signatures[signature])
+        yield signatures[signature]
+
+
+def préparer_variantes(entrée, sortie):
+    profils = dict()
+
+    with open(entrée, "rt") as flux:
+        courses = json.load(flux)
+
+    if os.path.exists("profils.json"):
+        with open(sortie, "rt") as flux:
+            profils = json.load(flux)
+
+        for clef1 in list(profils):
+            for clef2 in list(profils[clef1]):
+                profils[clef1][int(clef2)] = profils[clef1][clef2]
+                del profils[clef1][clef2]
+            profils[int(clef1)] = profils[clef1]
+            del profils[clef1]
+    else:
+        profils[0] = {9: list(dénombrer_variantes(courses, 0, None))}
+        profils[1] = dict()
+        for i in range(6):
+            profils[1][i] = list(dénombrer_variantes(courses, 1, i))
+        profils[2] = dict()
+        for i in range(6):
+            profils[2][i] = list(dénombrer_variantes(courses, 2, i))
+
+            with open(sortie, "wt") as flux:
+                json.dump(profils, flux)
+
+    return courses, profils
+
+
+def iter_étape(trajet, courses, profils):
+    nb1 = trajet.count(1)
+    nb2 = trajet.count(2)
+
+    for c0, c1, c2 in itertools.product(profils[0][9],
+                                        profils[1][nb1],
+                                        profils[2][nb2]):
+        etape = str()
+        p0 = 0
+        p1 = 0
+        m1 = nb1
+        p2 = 0
+        m2 = nb2
+        for tuile in trajet:
+            if tuile == -2:
+                etape += c2[m2]
+                m2 += 1
+            elif tuile == -1:
+                etape += c1[m1]
+                m1 += 1
+            elif tuile == 0:
+                etape += c0[p0]
+                p0 += 1
+            elif tuile == 1:
+                etape += c1[p1]
+                p1 += 1
+            elif tuile == 2:
+                etape += c2[p2]
+                p2 += 1
+
+        k = profil(etape, courses)
+        yield etape, k
 
 
 if __name__ == "__main__":
-    TYPE = 0
-    CARDINAL = None
-    if len(sys.argv) >= 2:
-        TYPE = int(sys.argv[1])
-    if len(sys.argv) >= 3:
-        CARDINAL = int(sys.argv[2])
-    dénombrer_variantes("../courses.json", TYPE, CARDINAL)
+    courses, profils = préparer_variantes("../courses.json", "profils.json")
+
+    trajet = list()
+    if len(sys.argv) == 22:
+        for arg in sys.argv[1:]:
+            if arg[-1] == ",":
+                tuile = int(arg[:-1])
+            else:
+                tuile = int(arg)
+            trajet.append(tuile)
+        print(trajet)
+
+        sigs = collections.defaultdict(int)
+
+        for étape, sig in iter_étape(trajet, courses, profils):
+            sigs[sig] += 1
+
+        print(max(sigs.values()))
