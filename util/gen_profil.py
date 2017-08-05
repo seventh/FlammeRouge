@@ -83,8 +83,8 @@ def dénombrer_variantes(chemin, type, card):
         arrivées = list()
         autres = list()
         for k in tronçons:
-            clef = k.lower()
-            groupes.setdefault(clef, list()).append(k)
+            clé = k.lower()
+            groupes.setdefault(clé, list()).append(k)
             if parcours["tronçons"][k][0] == "départ":
                 départs.append(k)
             elif parcours["tronçons"][k][-1] == "arrivée":

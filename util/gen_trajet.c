@@ -709,9 +709,9 @@ main (void)
       trajet_ecrire_code (sortie, code);
 
       nb += 1;
-      if (nb % 100000 == 0)
+      if (nb % 1000000 == 0)
         {
-          fprintf (stdout, "%.1fM | ", (float) nb / 1000000);
+          fprintf (stdout, "%luM | ", nb / 1000000);
           trajet_afficher (stdout, &trajet);
           fprintf (stdout, "\n");
           fflush (stdout);
