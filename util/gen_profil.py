@@ -11,6 +11,9 @@ import os
 import sys
 
 
+TRAJ = [0, -2, -2, 0, -2, 0, -2, 0, -1, 1, 0, 1, -1, -2, 0, -2, 0, -1, 0, 1, 0]
+
+
 def profil(étape, courses):
     retour = str()
 
@@ -148,6 +151,22 @@ def préparer_variantes(entrée, sortie):
     return courses, profils
 
 
+def compresser_signature(signature):
+    """Applique un encodage RLE à la signature
+    """
+    retour = str()
+
+    car = None
+    i = 0
+    while i < len(signature):
+        j = i + 1
+        while (j < len(signature) and signature[i] == signature[j]):
+            j += 1
+        retour += signature[i] + str(j - i)
+        i = j
+    return retour
+
+
 def iter_étape(trajet, courses, profils):
     nb1 = trajet.count(1)
     nb2 = trajet.count(2)
@@ -185,19 +204,5 @@ def iter_étape(trajet, courses, profils):
 if __name__ == "__main__":
     courses, profils = préparer_variantes("../courses.json", "profils.json")
 
-    trajet = list()
-    if len(sys.argv) == 22:
-        for arg in sys.argv[1:]:
-            if arg[-1] == ",":
-                tuile = int(arg[:-1])
-            else:
-                tuile = int(arg)
-            trajet.append(tuile)
-        print(trajet)
-
-        sigs = collections.defaultdict(int)
-
-        for étape, sig in iter_étape(trajet, courses, profils):
-            sigs[sig] += 1
-
-        print(max(sigs.values()))
+    for étape, sig in iter_étape(TRAJ, courses, profils):
+        print(étape, sig)
