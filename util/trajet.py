@@ -24,12 +24,10 @@ def coder(trajet):
 def décoder(code):
     """Transforme tout entier naturel inférieur à 5^19 en un trajet
     """
-    retour = [0]
-    while len(retour) < 20:
+    retour = 21 * [0]
+    for i in range(19, 0, -1):
         code, r = divmod(code, 5)
-        retour.append(r - 2)
-    retour.append(0)
-    retour.reverse()
+        retour[i] = r - 2
     return retour
 
 
