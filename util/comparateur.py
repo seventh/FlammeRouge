@@ -69,7 +69,7 @@ def tirer(taille):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO,
-    format='%(asctime)s %(message)s', datefmt='%X')
+                        format='%(asctime)s %(message)s', datefmt='%X')
     valeurs = tirer(N)
     if comparer(dec2, dec3, valeurs):
         mesurer(dec2, valeurs)

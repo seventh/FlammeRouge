@@ -1,13 +1,25 @@
 """Codage alternatif d'un trajet, pour tenir sur 38 bits
 """
 
-import random
-
-
 NB_BITS = 38
 CODE_GARDE = 190703665152
 
 
+class memoize(dict):
+
+    def __init__(self, func):
+        self._func = func
+
+    def __call__(self, *args):
+        return self[args]
+
+    def __missing__(self, key):
+        retour = self._func(*key)
+        self[key] = retour
+        return retour
+
+
+@memoize
 def _c(n, k):
     retour = 1
 
@@ -28,35 +40,45 @@ def _c(n, k):
 def _rang(combinaison, n):
     retour = 0
 
+    lg = len(combinaison)
     i = 0
     v = 0
-    while i < len(combinaison):
+    while i < lg:
         if v < combinaison[i]:
-            retour += _c(n - v - 1, len(combinaison) - i - 1)
+            retour += _c(n - v - 1, lg - i - 1)
         else:
             i += 1
         v += 1
 
     return retour
 
-
 def coder(trajet):
-    uns = list()
-    deux = list()
+    uns = 6 * [-1]
+    deux = 6 * [-1]
     code1 = 0
     code2 = 0
 
+    j = 0
+    k = 0
     for i in range(1, 21):
-        if abs(trajet[i]) == 1:
-            uns.append(i - 1)
-            code1 *= 2
-            if trajet[i] > 0:
-                code1 += 1
-        elif abs(trajet[i]) == 2:
-            deux.append(i - 1 - len(uns))
+        if trajet[i] == -2:
+            deux[k] = i - j - 1
+            k += 1
             code2 *= 2
-            if trajet[i] > 0:
-                code2 += 1
+        elif trajet[i] == -1:
+            uns[j] = i - 1
+            j += 1
+            code1 *= 2
+        elif trajet[i] == 1:
+            uns[j] = i - 1
+            j += 1
+            code1 *= 2
+            code1 += 1
+        elif trajet[i] == 2:
+            deux[k] = i - j - 1
+            k += 1
+            code2 *= 2
+            code2 += 1
 
     retour = _rang(uns, 19)
     retour *= _c(13, 6)
@@ -127,11 +149,3 @@ def décoder(code):
             retour.append(0)
 
     return retour
-
-
-if __name__ == "__main__":
-    rang_max = _c(19, 6) * _c(13, 6) * 2**6 * 2**6
-    code = random.randrange(rang_max)
-    trajet = décoder(code)
-    print(code, code == coder(trajet))
-    print(trajet)
