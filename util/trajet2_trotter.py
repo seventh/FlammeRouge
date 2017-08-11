@@ -1,6 +1,8 @@
 """Codage alternatif d'un trajet, pour tenir sur 38 bits
 """
 
+import trotter
+
 NB_BITS = 38
 CODE_GARDE = 190703665152
 
@@ -41,14 +43,9 @@ def _rang(combinaison, n):
     retour = 0
 
     lg = len(combinaison)
-    i = 0
-    v = 0
-    while i < lg:
-        if v < combinaison[i]:
-            retour += _c(n - v - 1, lg - i - 1)
-        else:
-            i += 1
-        v += 1
+
+    c = trotter.Combinations(lg, range(n))
+    retour = c.index(combinaison)
 
     return retour
 
@@ -95,18 +92,8 @@ def coder(trajet):
 def _combinaison(rang, n, p):
     retour = list()
 
-    v = 0
-    i = 0
-    while i < p - 1:
-        mur = _c(n - v - 1, p - i - 1)
-        if rang >= mur:
-            rang -= mur
-        else:
-            retour.append(v)
-            i += 1
-        v += 1
-    if p > 0:
-        retour.append(v + rang)
+    c = trotter.Combinations(p, range(n))
+    retour = c[rang]
 
     return retour
 

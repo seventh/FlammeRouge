@@ -2,6 +2,7 @@
 """
 
 import fractions
+
 import trajet
 import trajet2
 
