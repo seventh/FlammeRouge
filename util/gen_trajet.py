@@ -9,9 +9,9 @@ import json
 import Polygon
 
 import agent
-import trajet
+import trajet2 as trajet
 
-TRAJETS = "trajets-python.bin"
+TRAJETS = "trajets-python2.bin"
 
 
 class Magot:
@@ -116,7 +116,12 @@ class Strate:
             retour = Strate()
             retour.angle = arrivée.angle
             retour.jalon = arrivée.jalon
-            retour.forme = strate.forme | arrivée.forme
+            # Équivalent, mais plus rapide, que…
+            retour.forme = Polygon.Polygon(strate.forme)
+            nb_contours = len(arrivée.forme)
+            for i in range(nb_contours):
+                retour.forme.addContour(arrivée.forme.contour(i))
+            # …retour.forme = strate.forme | arrivée.forme
             retour.magot = dict()
             retour.pièce = 0
             retour.voies = list()
@@ -137,7 +142,11 @@ class Strate:
                 retour = Strate()
                 retour.angle = pièce.angle
                 retour.jalon = pièce.jalon
-                retour.forme = self.forme | pièce.forme
+                # Équivalent, mais plus rapide, que…
+                retour.forme = Polygon.Polygon(self.forme)
+                for i in range(len(pièce.forme)):
+                    retour.forme.addContour(pièce.forme.contour(i))
+                # …retour.forme = self.forme | pièce.forme
                 retour.magot = self.magot.poser(type)
                 retour.pièce = type
                 retour.voies = list(retour.magot)
