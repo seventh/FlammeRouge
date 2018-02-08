@@ -9,9 +9,9 @@ import json
 import Polygon
 
 import agent
-import trajet2 as trajet
+import trajet
 
-TRAJETS = "trajets-python2.bin"
+TRAJETS = "trajets-python.bin"
 
 
 class Magot:
