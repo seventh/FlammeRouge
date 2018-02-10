@@ -416,6 +416,59 @@ piece_fusionner (Piece * res, Piece * tuile, Piece * trajet)
   return _retour;
 }
 
+
+/* Aire de la boite de délimitation
+ */
+u8
+piece_aire (const Piece * piece)
+{
+  u8 _retour = 0;
+  gpc_vertex _cinf = { 0, 0 };
+  gpc_vertex _csup = { 0, 0 };
+  int _i = 0;
+  int _j = 0;
+  int _init = 1;
+
+  for (_i = 0; _i < piece->forme.num_contours; ++_i)
+    {
+      for (_j = 0; _j < piece->forme.contour[_i].num_vertices; ++_j)
+        {
+          const gpc_vertex *_sommet = piece->forme.contour[_i].vertex + _j;
+
+          if (_init)
+            {
+              _init = 0;
+              memcpy (&_cinf, _sommet, sizeof (gpc_vertex));
+              memcpy (&_csup, _sommet, sizeof (gpc_vertex));
+            }
+          else
+            {
+              if (_sommet->x < _cinf.x)
+                {
+                  _cinf.x = _sommet->x;
+                }
+              else if (_sommet->x > _csup.x)
+                {
+                  _csup.x = _sommet->x;
+                }
+
+              if (_sommet->y < _cinf.y)
+                {
+                  _cinf.y = _sommet->y;
+                }
+              else if (_sommet->y > _csup.y)
+                {
+                  _csup.y = _sommet->y;
+                }
+            }
+        }
+    }
+
+  _retour = (_csup.x - _cinf.x) * (_csup.y - _cinf.y);
+  return _retour;
+}
+
+
 /* ===========================================================================
    VOIE
    ======================================================================== */
