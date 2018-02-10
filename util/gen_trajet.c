@@ -425,6 +425,9 @@ piece_aire (const Piece * piece)
   u8 _retour = 0;
   gpc_vertex _cinf = { 0, 0 };
   gpc_vertex _csup = { 0, 0 };
+  gpc_vertex _cplus = { 0, 0 };
+  gpc_vertex _cmoins = { 0, 0 };
+  double _res = 0.0;
   int _i = 0;
   int _j = 0;
   int _init = 1;
@@ -440,6 +443,9 @@ piece_aire (const Piece * piece)
               _init = 0;
               memcpy (&_cinf, _sommet, sizeof (gpc_vertex));
               memcpy (&_csup, _sommet, sizeof (gpc_vertex));
+              _cplus.x = _sommet->x + _sommet->y;
+              _cplus.y = _sommet->x - _sommet->y;
+              memcpy (&_cmoins, &_cplus, sizeof (gpc_vertex));
             }
           else
             {
@@ -460,11 +466,41 @@ piece_aire (const Piece * piece)
                 {
                   _csup.y = _sommet->y;
                 }
+
+              _res = _sommet->x + _sommet->y;
+              if (_res < _cmoins.x)
+                {
+                  _cmoins.x = _res;
+                }
+              else if (_res > _cplus.x)
+                {
+                  _cplus.x = _res;
+                }
+
+              _res = _sommet->x - _sommet->y;
+              if (_res < _cmoins.y)
+                {
+                  _cmoins.y = _res;
+                }
+              else if (_res > _cplus.y)
+                {
+                  _cplus.y = _res;
+                }
             }
         }
     }
 
+  _res = (_cplus.x - _cmoins.x) * (_cplus.y - _cmoins.y) / 2.0;
   _retour = (_csup.x - _cinf.x) * (_csup.y - _cinf.y);
+  if (_res < _retour)
+    {
+      /* fprintf (stderr, "Le quart de tour est significatif !\n"); */
+      /* fprintf (stderr, "0° = %llu | 45° = %lf\n", _retour, _res); */
+      /* fflush (stderr); */
+
+      _retour = _res;
+    }
+
   return _retour;
 }
 
@@ -735,6 +771,8 @@ main (void)
   Trajet trajet;
   us nb = 0;
   u8 code = 0;
+  u8 _aire = 0;
+  u8 _aire_min = (u8) - 1;
   struct sigaction action;
 
   memset (&action, 0, sizeof (struct sigaction));
@@ -758,6 +796,18 @@ main (void)
   while (contexte_prochain (&contexte) && cont != 0)
     {
       contexte_trajet (&trajet, &contexte);
+
+      _aire = piece_aire (&contexte.strates[contexte.lg - 1].piece);
+      if (_aire < _aire_min)
+        {
+          fprintf (stdout, "Aire = %llu | ", _aire);
+          trajet_afficher (stdout, &trajet);
+          fprintf (stdout, "\n");
+          fflush (stdout);
+
+          _aire_min = _aire;
+        }
+
       code = trajet_coder (&trajet);
       trajet_ecrire_code (sortie, code);
 
