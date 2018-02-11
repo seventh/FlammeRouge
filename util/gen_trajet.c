@@ -7,6 +7,7 @@
 
 typedef signed char i1;
 typedef unsigned char u1;
+typedef unsigned int u4;
 typedef unsigned long long u8;
 typedef size_t us;
 
@@ -93,13 +94,13 @@ trajet_ouvrir_fichier (const char *nom)
       fseek (_retour, 0, SEEK_END);
       _taille = ftell (_retour);
 
-      if (_taille < 6)
+      if (_taille < 10)
         {
           fseek (_retour, 0, SEEK_SET);
         }
       else
         {
-          fseek (_retour, -(6 + (_taille % 6)), SEEK_CUR);
+          fseek (_retour, -(10 + (_taille % 10)), SEEK_CUR);
         }
     }
 
@@ -146,11 +147,27 @@ trajet_lire_code (FILE * sortie)
           _retour <<= 8;
           _retour += _donnees[_i];
         }
+      fseek (sortie, 4, SEEK_CUR);
     }
 
   return _retour;
 }
 
+
+void
+aire_ecrire (FILE * sortie, u4 aire)
+{
+  /* Gros-boutisme */
+  const u8 _masque = 0xFF;
+  u1 _donnee = 0;
+  us _i;
+
+  for (_i = 0; _i < 4; ++_i)
+    {
+      _donnee = (aire >> (8 * (3 - _i))) & _masque;
+      fwrite (&_donnee, 1, 1, sortie);
+    }
+}
 
 /* ===========================================================================
    MAGOT
@@ -772,7 +789,6 @@ main (void)
   us nb = 0;
   u8 code = 0;
   u8 _aire = 0;
-  u8 _aire_min = (u8) - 1;
   struct sigaction action;
 
   memset (&action, 0, sizeof (struct sigaction));
@@ -783,7 +799,7 @@ main (void)
   sortie = trajet_ouvrir_fichier (SORTIE);
 
   contexte_reprendre (&contexte, sortie);
-  nb = ftell (sortie) / 6;
+  nb = ftell (sortie) / 10;
   if (nb != 0)
     {
       contexte_trajet (&trajet, &contexte);
@@ -798,18 +814,9 @@ main (void)
       contexte_trajet (&trajet, &contexte);
 
       _aire = piece_aire (&contexte.strates[contexte.lg - 1].piece);
-      if (_aire < _aire_min)
-        {
-          fprintf (stdout, "Aire = %llu | ", _aire);
-          trajet_afficher (stdout, &trajet);
-          fprintf (stdout, "\n");
-          fflush (stdout);
-
-          _aire_min = _aire;
-        }
-
       code = trajet_coder (&trajet);
       trajet_ecrire_code (sortie, code);
+      aire_ecrire (sortie, _aire);
 
       nb += 1;
       if (nb % 1000000 == 0)
