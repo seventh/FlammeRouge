@@ -1,17 +1,19 @@
 #include <signal.h>
-#include <stdio.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "gpc.h"
 
 typedef signed char i1;
 typedef unsigned char u1;
-typedef unsigned int u4;
+typedef unsigned short u2;
 typedef unsigned long long u8;
 typedef size_t us;
 
 #define SORTIE "trajets-c.bin"
+#define AIRES "aires-c.bin"
+#define MAX_AIRE 128
 
 /* ===========================================================================
    TRAJET
@@ -94,13 +96,13 @@ trajet_ouvrir_fichier (const char *nom)
       fseek (_retour, 0, SEEK_END);
       _taille = ftell (_retour);
 
-      if (_taille < 10)
+      if (_taille < 6)
         {
           fseek (_retour, 0, SEEK_SET);
         }
       else
         {
-          fseek (_retour, -(10 + (_taille % 10)), SEEK_CUR);
+          fseek (_retour, -(6 + (_taille % 6)), SEEK_CUR);
         }
     }
 
@@ -147,27 +149,11 @@ trajet_lire_code (FILE * sortie)
           _retour <<= 8;
           _retour += _donnees[_i];
         }
-      fseek (sortie, 4, SEEK_CUR);
     }
 
   return _retour;
 }
 
-
-void
-aire_ecrire (FILE * sortie, u4 aire)
-{
-  /* Gros-boutisme */
-  const u8 _masque = 0xFF;
-  u1 _donnee = 0;
-  us _i;
-
-  for (_i = 0; _i < 4; ++_i)
-    {
-      _donnee = (aire >> (8 * (3 - _i))) & _masque;
-      fwrite (&_donnee, 1, 1, sortie);
-    }
-}
 
 /* ===========================================================================
    MAGOT
@@ -768,6 +754,184 @@ contexte_prochain (Contexte * contexte)
 
 
 /* ===========================================================================
+   LISTE
+   ======================================================================== */
+
+typedef struct
+{
+  u8 code;
+  u8 aire;
+} Aire;
+
+typedef struct
+{
+  Aire aires[MAX_AIRE];
+  us nombre;
+  u8 max;
+} Liste;
+
+
+void
+aire_ecrire (FILE * sortie, u8 aire)
+{
+  /* RAPPELS :
+     - Une aire tient sur 8 octets
+     - Il est écrit au format gros-boutisme
+   */
+  const u8 _masque = 0xFF;
+  u1 _donnee = 0;
+  us _i;
+
+  for (_i = 0; _i < 8; ++_i)
+    {
+      _donnee = (aire >> (8 * (7 - _i))) & _masque;
+      fwrite (&_donnee, 1, 1, sortie);
+    }
+}
+
+
+void
+liste_init (Liste * liste)
+{
+  liste->nombre = 0;
+  liste->max = (u8) - 1;
+}
+
+void
+liste_charger (Liste * liste, const char *nom)
+{
+  us _nb = 0;
+  u1 _donnees[16];              /* code (6o) + aire (8o) + alignement (2o) */
+  us _i = 0;
+  FILE *_fichier = NULL;
+  u8 min = 0;
+
+  _fichier = fopen (nom, "rb");
+  if (_fichier != NULL)
+    {
+      while (liste->nombre < MAX_AIRE)
+        {
+          Aire *_noeud = liste->aires + liste->nombre;
+
+          _nb = fread (&_donnees, sizeof (_donnees), 1, _fichier);
+          if (_nb != 1)
+            {
+              break;
+            }
+
+          /* Alignement sur 2 octets */
+          /* ràf */
+
+          /* Code sur 6 octets */
+          _noeud->code = 0;
+          for (_i = 2; _i < 2 + 6; ++_i)
+            {
+              _noeud->code <<= 8;
+              _noeud->code += _donnees[_i];
+            }
+
+          /* Aire sur 8 octets */
+          _noeud->aire = 0;
+          for (_i = 8; _i < 8 + 8; ++_i)
+            {
+              _noeud->aire <<= 8;
+              _noeud->aire += _donnees[_i];
+            }
+
+          if (liste->nombre == 0 || liste->max < _noeud->aire)
+            {
+              liste->max = _noeud->aire;
+            }
+          if (liste->nombre == 0 || min > _noeud->aire)
+            {
+              min = _noeud->aire;
+            }
+          liste->nombre += 1;
+        }
+
+      fprintf (stdout, "Aire min. = %llu\n", min);
+      fclose (_fichier);
+    }
+}
+
+
+void
+liste_ecrire (const Liste * liste, const char *nom)
+{
+  FILE *_fichier = NULL;
+  u2 _alignement = 0;
+  us _j = 0;
+  u8 min = 0;
+
+  _fichier = fopen (nom, "wb");
+  for (_j = 0; _j < liste->nombre; ++_j)
+    {
+      const Aire *_noeud = liste->aires + _j;
+
+      fwrite (&_alignement, sizeof (_alignement), 1, _fichier);
+      trajet_ecrire_code (_fichier, _noeud->code);
+      aire_ecrire (_fichier, _noeud->aire);
+      if (_j == 0 || min > _noeud->aire)
+        {
+          min = _noeud->aire;
+        }
+    }
+  fprintf (stdout, "Aire min. = %llu\n", min);
+  fclose (_fichier);
+}
+
+
+void
+liste_remplacer (Liste * liste, const u8 code, const u8 aire)
+{
+  us _i = 0;
+  u8 max = 0;
+
+  /* Cas trivial : la liste n'est pas pleine */
+  if (liste->nombre < MAX_AIRE)
+    {
+      _i = liste->nombre;
+      liste->aires[_i].code = code;
+      liste->aires[_i].aire = aire;
+      if (liste->nombre == 0 || aire > liste->max)
+        {
+          liste->max = aire;
+        }
+      liste->nombre += 1;
+    }
+
+  /* Plus compliqué : la liste est saturée */
+  else if (aire < liste->max)
+    {
+      for (_i = 0; _i < liste->nombre; ++_i)
+        {
+          if (liste->aires[_i].aire == liste->max)
+            {
+              break;
+            }
+          if (liste->aires[_i].aire > max)
+            {
+              max = liste->aires[_i].aire;
+            }
+        }
+
+      liste->aires[_i].code = code;
+      liste->aires[_i].aire = aire;
+
+      while (_i < liste->nombre)
+        {
+          if (liste->aires[_i].aire > max)
+            {
+              max = liste->aires[_i].aire;
+            }
+          _i += 1;
+        }
+      liste->max = max;
+    }
+}
+
+
+/* ===========================================================================
    PROGRAMME PRINCIPAL
    ======================================================================== */
 
@@ -786,20 +950,25 @@ main (void)
   Contexte contexte;
   FILE *sortie = NULL;
   Trajet trajet;
+  Liste _liste;
   us nb = 0;
   u8 code = 0;
   u8 _aire = 0;
+  u8 _aire_min = (u8) - 1;
   struct sigaction action;
 
   memset (&action, 0, sizeof (struct sigaction));
   action.sa_handler = &gestionnaire;
   sigaction (SIGINT, &action, NULL);
 
+  liste_init (&_liste);
+  liste_charger (&_liste, AIRES);
+
   contexte.lg = 0;
   sortie = trajet_ouvrir_fichier (SORTIE);
 
   contexte_reprendre (&contexte, sortie);
-  nb = ftell (sortie) / 10;
+  nb = ftell (sortie) / 6;
   if (nb != 0)
     {
       contexte_trajet (&trajet, &contexte);
@@ -814,9 +983,19 @@ main (void)
       contexte_trajet (&trajet, &contexte);
 
       _aire = piece_aire (&contexte.strates[contexte.lg - 1].piece);
+      if (_aire < _aire_min)
+        {
+          fprintf (stdout, "Aire = %llu | ", _aire);
+          trajet_afficher (stdout, &trajet);
+          fprintf (stdout, "\n");
+          fflush (stdout);
+
+          _aire_min = _aire;
+        }
+
       code = trajet_coder (&trajet);
+      liste_remplacer (&_liste, code, _aire);
       trajet_ecrire_code (sortie, code);
-      aire_ecrire (sortie, _aire);
 
       nb += 1;
       if (nb % 1000000 == 0)
@@ -827,6 +1006,8 @@ main (void)
           fflush (stdout);
         }
     }
+
+  liste_ecrire (&_liste, AIRES);
 
   fclose (sortie);
   return 0;
