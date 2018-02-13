@@ -1000,6 +1000,8 @@ main (void)
       nb += 1;
       if (nb % 1000000 == 0)
         {
+          liste_ecrire (&_liste, AIRES);
+
           fprintf (stdout, "%zuM | ", nb / 1000000);
           trajet_afficher (stdout, &trajet);
           fprintf (stdout, "\n");
