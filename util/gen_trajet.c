@@ -881,15 +881,17 @@ liste_ecrire (const Liste * liste, const char *nom)
 }
 
 
-void
+int
 liste_remplacer (Liste * liste, const u8 code, const u8 aire)
 {
+  int _retour = 0;
   us _i = 0;
   u8 max = 0;
 
   /* Cas trivial : la liste n'est pas pleine */
   if (liste->nombre < MAX_AIRE)
     {
+      _retour = 1;
       _i = liste->nombre;
       liste->aires[_i].code = code;
       liste->aires[_i].aire = aire;
@@ -903,6 +905,7 @@ liste_remplacer (Liste * liste, const u8 code, const u8 aire)
   /* Plus compliqué : la liste est saturée */
   else if (aire < liste->max)
     {
+      _retour = 1;
       for (_i = 0; _i < liste->nombre; ++_i)
         {
           if (liste->aires[_i].aire == liste->max)
@@ -928,6 +931,8 @@ liste_remplacer (Liste * liste, const u8 code, const u8 aire)
         }
       liste->max = max;
     }
+
+  return _retour;
 }
 
 
@@ -956,6 +961,7 @@ main (void)
   u8 _aire = 0;
   u8 _aire_min = (u8) - 1;
   struct sigaction action;
+  int _modification = 0;
 
   memset (&action, 0, sizeof (struct sigaction));
   action.sa_handler = &gestionnaire;
@@ -994,13 +1000,17 @@ main (void)
         }
 
       code = trajet_coder (&trajet);
-      liste_remplacer (&_liste, code, _aire);
+      _modification |= liste_remplacer (&_liste, code, _aire);
       trajet_ecrire_code (sortie, code);
 
       nb += 1;
       if (nb % 1000000 == 0)
         {
-          liste_ecrire (&_liste, AIRES);
+          if (_modification)
+            {
+              liste_ecrire (&_liste, AIRES);
+              _modification = 0;
+            }
 
           fprintf (stdout, "%zuM | ", nb / 1000000);
           trajet_afficher (stdout, &trajet);
