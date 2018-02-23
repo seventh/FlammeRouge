@@ -94,13 +94,13 @@ trajet_ouvrir_fichier (const char *nom)
       fseek (_retour, 0, SEEK_END);
       _taille = ftell (_retour);
 
-      if (_taille < 10)
+      if (_taille < 9)
         {
           fseek (_retour, 0, SEEK_SET);
         }
       else
         {
-          fseek (_retour, -(10 + (_taille % 10)), SEEK_CUR);
+          fseek (_retour, -(9 + (_taille % 9)), SEEK_CUR);
         }
     }
 
@@ -147,7 +147,7 @@ trajet_lire_code (FILE * sortie)
           _retour <<= 8;
           _retour += _donnees[_i];
         }
-      fseek (sortie, 4, SEEK_CUR);
+      fseek (sortie, 3, SEEK_CUR);
     }
 
   return _retour;
@@ -162,9 +162,9 @@ aire_ecrire (FILE * sortie, u4 aire)
   u1 _donnee = 0;
   us _i;
 
-  for (_i = 0; _i < 4; ++_i)
+  for (_i = 0; _i < 3; ++_i)
     {
-      _donnee = (aire >> (8 * (3 - _i))) & _masque;
+      _donnee = (aire >> (8 * (2 - _i))) & _masque;
       fwrite (&_donnee, 1, 1, sortie);
     }
 }
@@ -799,7 +799,7 @@ main (void)
   sortie = trajet_ouvrir_fichier (SORTIE);
 
   contexte_reprendre (&contexte, sortie);
-  nb = ftell (sortie) / 10;
+  nb = ftell (sortie) / 9;
   if (nb != 0)
     {
       contexte_trajet (&trajet, &contexte);
