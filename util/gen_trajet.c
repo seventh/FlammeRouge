@@ -154,6 +154,45 @@ trajet_lire_code (FILE * sortie)
 }
 
 
+int
+trajet_est_minimal (const Trajet * trajet)
+{
+  int _retour = 1;
+
+  us _i;
+
+  /* On ne fait pas la comparaison avec le trajet symétrique. Ça devrait
+     normalement être une condition d'arrêt du programme */
+
+  /* Comparaison avec le trajet parcouru en sens inverse */
+  _i = 0;
+  while (_i < TRAJET_LG
+         && trajet->tuiles[_i] == trajet->tuiles[TRAJET_LG - 1 - _i])
+    {
+      _i += 1;
+    }
+  if (_i < TRAJET_LG
+      && trajet->tuiles[_i] > trajet->tuiles[TRAJET_LG - 1 - _i])
+    {
+      _retour = 0;
+    }
+
+  /* Comparaison avec le trajet symétrique parcouru en sens inverse */
+  _i = 0;
+  while (_i < TRAJET_LG
+         && trajet->tuiles[_i] == -trajet->tuiles[TRAJET_LG - 1 - _i])
+    {
+      _i += 1;
+    }
+  if (_i < TRAJET_LG
+      && trajet->tuiles[_i] > -trajet->tuiles[TRAJET_LG - 1 - _i])
+    {
+      _retour = 0;
+    }
+
+  return _retour;
+}
+
 void
 aire_ecrire (FILE * sortie, u4 aire)
 {
@@ -813,18 +852,22 @@ main (void)
     {
       contexte_trajet (&trajet, &contexte);
 
-      _aire = piece_aire (&contexte.strates[contexte.lg - 1].piece);
-      code = trajet_coder (&trajet);
-      trajet_ecrire_code (sortie, code);
-      aire_ecrire (sortie, _aire);
-
-      nb += 1;
-      if (nb % 1000000 == 0)
+      if (trajet_est_minimal (&trajet))
         {
-          fprintf (stdout, "%zuM | ", nb / 1000000);
-          trajet_afficher (stdout, &trajet);
-          fprintf (stdout, "\n");
-          fflush (stdout);
+
+          _aire = piece_aire (&contexte.strates[contexte.lg - 1].piece);
+          code = trajet_coder (&trajet);
+          trajet_ecrire_code (sortie, code);
+          aire_ecrire (sortie, _aire);
+
+          nb += 1;
+          if (nb % 1000000 == 0)
+            {
+              fprintf (stdout, "%zuM | ", nb / 1000000);
+              trajet_afficher (stdout, &trajet);
+              fprintf (stdout, "\n");
+              fflush (stdout);
+            }
         }
     }
 
