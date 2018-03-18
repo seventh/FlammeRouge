@@ -1,8 +1,10 @@
 #include <signal.h>
-#include <stdio.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include "gpc.h"
 
 typedef signed char i1;
@@ -12,6 +14,52 @@ typedef unsigned long long u8;
 typedef size_t us;
 
 #define SORTIE "trajets-c.bin"
+
+/* ===========================================================================
+   AIRE
+   ======================================================================== */
+
+void
+aire_ecrire (FILE * sortie, u4 aire)
+{
+  /* Gros-boutisme */
+  const u8 _masque = 0xFF;
+  u1 _donnee = 0;
+  us _i;
+
+  for (_i = 0; _i < 3; ++_i)
+    {
+      _donnee = (aire >> (8 * (2 - _i))) & _masque;
+      fwrite (&_donnee, 1, 1, sortie);
+    }
+}
+
+
+u4
+aire_lire (FILE * entree)
+{
+  u8 _retour = 0;
+  u1 _donnees[3];
+  us _i = 0;
+  us _nb = 0;
+
+  _nb = fread (&_donnees, 1, sizeof (_donnees), entree);
+  if (_nb < sizeof (_donnees))
+    {
+      fseek (entree, -_nb, SEEK_CUR);
+    }
+  else
+    {
+      for (_i = 0; _i < 3; ++_i)
+        {
+          _retour <<= 8;
+          _retour += _donnees[_i];
+        }
+    }
+
+  return _retour;
+}
+
 
 /* ===========================================================================
    TRAJET
@@ -147,7 +195,6 @@ trajet_lire_code (FILE * sortie)
           _retour <<= 8;
           _retour += _donnees[_i];
         }
-      fseek (sortie, 3, SEEK_CUR);
     }
 
   return _retour;
@@ -193,20 +240,6 @@ trajet_est_minimal (const Trajet * trajet)
   return _retour;
 }
 
-void
-aire_ecrire (FILE * sortie, u4 aire)
-{
-  /* Gros-boutisme */
-  const u8 _masque = 0xFF;
-  u1 _donnee = 0;
-  us _i;
-
-  for (_i = 0; _i < 3; ++_i)
-    {
-      _donnee = (aire >> (8 * (2 - _i))) & _masque;
-      fwrite (&_donnee, 1, 1, sortie);
-    }
-}
 
 /* ===========================================================================
    MAGOT
@@ -713,6 +746,9 @@ contexte_reprendre (Contexte * contexte, FILE * sortie)
   Trajet _trajet;
   us _i = 0;
 
+  /* Pour assurer l'alignement */
+  aire_lire (sortie);
+
   memset (contexte, 0, sizeof (Contexte));
   contexte->lg = 1;
   strate_depart (contexte->strates);
@@ -819,6 +855,60 @@ gestionnaire (int signal __attribute__ ((unused)))
 }
 
 
+void
+compacter (const char *nom)
+{
+  FILE *_entree = NULL;
+  FILE *_sortie = NULL;
+  Trajet _trajet;
+  u8 _code = 0;
+  u8 _aire = 0;
+  u8 _position = 0;
+  u8 _nb_lus = 0;
+  u8 _nb_ecrits = 0;
+
+  _entree = fopen (nom, "rb");
+  if (_entree == NULL)
+    {
+      return;
+    }
+
+  _sortie = fopen (nom, "r+b");
+
+  /* Compactage */
+  while (1)
+    {
+      _code = trajet_lire_code (_entree);
+      if (_code == 0)
+        {
+          break;
+        }
+      _aire = aire_lire (_entree);
+      _nb_lus += 1;
+
+      trajet_decoder (_code, &_trajet);
+      if (trajet_est_minimal (&_trajet))
+        {
+          trajet_ecrire_code (_sortie, _code);
+          aire_ecrire (_sortie, _aire);
+          _nb_ecrits += 1;
+        }
+    }
+  _position = ftell (_sortie);
+
+  fclose (_sortie);
+  fclose (_entree);
+
+  /* Césure du fichier initial à la bonne dimension */
+  truncate (nom, _position);
+
+  /* Bilan final */
+  fprintf (stdout,
+           "%lld enregistrements écrits pour %lld enregistrements lus\n",
+           _nb_ecrits, _nb_lus);
+}
+
+
 int
 main (void)
 {
@@ -830,6 +920,14 @@ main (void)
   u8 _aire = 0;
   struct sigaction action;
 
+  /* Compactage (optionnel) d'une ancienne sortie issue d'un programme moins
+     optimisé */
+  if (0)
+    {
+      compacter (SORTIE);
+    }
+
+  /* Début du programme de recherche */
   memset (&action, 0, sizeof (struct sigaction));
   action.sa_handler = &gestionnaire;
   sigaction (SIGINT, &action, NULL);
