@@ -208,17 +208,6 @@ trajet_est_minimal (const Trajet * trajet)
 
   us _i;
 
-  /* Comparaison avec le trajet symétrique */
-  _i = 0;
-  while (_i < TRAJET_LG && trajet->tuiles[_i] == 0)
-    {
-      _i += 1;
-    }
-  if (_i < TRAJET_LG && trajet->tuiles[_i] > 0)
-    {
-      _retour = 0;
-    }
-
   /* Comparaison avec le trajet parcouru en sens inverse */
   _i = 0;
   while (_i < TRAJET_LG
@@ -241,6 +230,18 @@ trajet_est_minimal (const Trajet * trajet)
     }
   if (_i < TRAJET_LG
       && trajet->tuiles[_i] > -trajet->tuiles[TRAJET_LG - 1 - _i])
+    {
+      _retour = 0;
+    }
+
+  /* Comparaison avec le trajet symétrique. On le fait en dernier lieu car
+     c'est la vérification la moins probable. */
+  _i = 0;
+  while (_i < TRAJET_LG && trajet->tuiles[_i] == 0)
+    {
+      _i += 1;
+    }
+  if (_i < TRAJET_LG && trajet->tuiles[_i] > 0)
     {
       _retour = 0;
     }
