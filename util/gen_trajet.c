@@ -208,8 +208,16 @@ trajet_est_minimal (const Trajet * trajet)
 
   us _i;
 
-  /* On ne fait pas la comparaison avec le trajet symétrique. Ça devrait
-     normalement être une condition d'arrêt du programme */
+  /* Comparaison avec le trajet symétrique */
+  _i = 0;
+  while (_i < TRAJET_LG && trajet->tuiles[_i] == 0)
+    {
+      _i += 1;
+    }
+  if (_i < TRAJET_LG && trajet->tuiles[_i] > 0)
+    {
+      _retour = 0;
+    }
 
   /* Comparaison avec le trajet parcouru en sens inverse */
   _i = 0;
