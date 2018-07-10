@@ -114,6 +114,38 @@
       "u": ["plat", "arrivée", "arrivée", "arrivée", "arrivée", "arrivée"]
   },
   "courses": {
+    "1- Fontenay-le-Comte": {
+      "tours": 1,
+      "tracé": "AbcdIjfltQHRPgkSmnoeu"
+    },
+    "2- La-Roche-sur-Yon": {
+      "tours": 1,
+      "tracé": "AIfmonjldbcHEPGktrqsu"
+    },
+    "3- Cholet": {
+      "tours": 1,
+      "tracé": "abcPOdlImEHTJnfRSqgku"
+    },
+    "4- Sarzeau": {
+      "tours": 1,
+      "tracé": "abKcdsHpeIGJflrmnoqTu"
+    },
+    "5- Quimper - Hill": {
+      "tours": 1,
+      "tracé": "aijRlnPOQcFdMBgestkHU"
+    },
+    "6- Mur de Bretagne": {
+      "tours": 1,
+      "tracé": "almniSTboJkHdEqGPRFCu"
+    },
+    "7- Chartres": {
+      "tours": 1,
+      "tracé": "aegrqHOtSpKbcdfiJlmnu"
+    },
+    "8- Amiens": {
+      "tours": 1,
+      "tracé": "abcdHigtQSflmponekrJu"
+    },
     "Avenue Corso Paseo": {
       "tours": 1,
       "tracé": "abcdefghijklmnopqrstu"
