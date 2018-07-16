@@ -114,37 +114,73 @@
       "u": ["plat", "arrivée", "arrivée", "arrivée", "arrivée", "arrivée"]
   },
   "courses": {
-    "1- Fontenay-le-Comte": {
+    "01- Fontenay-le-Comte": {
       "tours": 1,
       "tracé": "AbcdIjfltQHRPgkSmnoeu"
     },
-    "2- La-Roche-sur-Yon": {
+    "02- La-Roche-sur-Yon": {
       "tours": 1,
       "tracé": "AIfmonjldbcHEPGktrqsu"
     },
-    "3- Cholet": {
+    "03- Cholet": {
       "tours": 1,
       "tracé": "abcPOdlImEHTJnfRSqgku"
     },
-    "4- Sarzeau": {
+    "04- Sarzeau": {
       "tours": 1,
       "tracé": "abKcdsHpeIGJflrmnoqTu"
     },
-    "5- Quimper - Hill": {
+    "05- Quimper - Hill": {
       "tours": 1,
       "tracé": "aijRlnPOQcFdMBgestkHU"
     },
-    "6- Mur de Bretagne": {
+    "06- Mur de Bretagne": {
       "tours": 1,
       "tracé": "almniSTboJkHdEqGPRFCu"
     },
-    "7- Chartres": {
+    "07- Chartres": {
       "tours": 1,
       "tracé": "aegrqHOtSpKbcdfiJlmnu"
     },
-    "8- Amiens": {
+    "08- Amiens": {
       "tours": 1,
       "tracé": "abcdHigtQSflmponekrJu"
+    },
+    "10- Le Grand-Bornand": {
+      "tours": 1,
+      "tracé": "aBcmigstqrjeNLODPHFku"
+    },
+    "11- La Rosière": {
+      "tours": 1,
+      "tracé": "AdMEGPfLHBjIStqcRNkou"
+    },
+    "12- L'Alpe-d'Huez": {
+      "tours": 1,
+      "tracé": "adCLPJBHFimorTsKNQEgu"
+    },
+    "13- Valence": {
+      "tours": 1,
+      "tracé": "abegQcStdKfijPlrHmonu"
+    },
+    "14- Mende": {
+      "tours": 1,
+      "tracé": "AiKbdEGPQHLFrmonTJsCu"
+    },
+    "15- Carcassonne": {
+      "tours": 1,
+      "tracé": "acdstRKOIgqHjPBflemnu"
+    },
+    "16- Bagnères-de-Luchon": {
+      "tours": 1,
+      "tracé": "aiKEFCLBgJmntrqoDPHSu"
+    },
+    "17- Col de Portet": {
+      "tours": 1,
+      "tracé": "ACNsFBiMLPHtgEDOQU"
+    },
+    "18- Pau": {
+      "tours": 1,
+      "tracé": "abcdfEIlSTHqmJkRnPgou"
     },
     "Avenue Corso Paseo": {
       "tours": 1,
