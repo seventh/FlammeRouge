@@ -1,6 +1,7 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
-# Copyright ou © ou Copr. Guillaume Lemaître (2016)
+# Copyright ou © ou Copr. Guillaume Lemaître (2016, 2020)
 #
 #   guillaume.lemaitre@gmail.com
 #
@@ -32,8 +33,6 @@
 #
 # Le fait que vous puissiez accéder à cet en-tête signifie que vous avez pris
 # connaissance de la licence CeCILL, et que vous en avez accepté les termes.
-
-
 """Implémentation du jeu "Flamme rouge" pour un joueur
 """
 
@@ -41,6 +40,7 @@ import collections
 import enum
 import json
 import logging
+import os.path
 import pickle
 import random
 import socket
@@ -57,38 +57,34 @@ def choisir_course(chemin):
 
     # Vérification
     for nom_case, case in parcours["cases"].items():
-        if not ("angle" in case and
-                "pente" in case):
-            logging.error("Case {} incohérente".format(nom_case))
+        if not ("angle" in case and "pente" in case):
+            logging.error(f"Case {nom_case} incohérente")
 
     for nom_tronçon, tronçon in parcours["tronçons"].items():
         if tronçon is None:
-            logging.warning("Tronçon {} non déterminé".format(nom_tronçon))
+            logging.warning(f"Tronçon {nom_tronçon} non déterminé")
         else:
             if len(tronçon) not in [2, 6]:
-                logging.error("Tronçon {} incohérent".format(nom_tronçon))
+                logging.error(f"Tronçon {nom_tronçon} incohérent")
             for nom_case in tronçon:
                 if nom_case not in parcours["cases"]:
                     logging.error(
-                        "Case inconnue dans tronçon «{}»".format(nom_tronçon))
+                        f"Case inconnue dans tronçon «{nom_tronçon}»")
 
     for nom_course, course in parcours["courses"].items():
         for nom_tronçon in course["tracé"]:
             if nom_tronçon not in parcours["tronçons"]:
-                logging.error(
-                    "Tronçon inconnu dans la course «{}»".format(nom_course))
+                logging.error(f"Tronçon inconnu dans la course «{nom_course}»")
             elif parcours["tronçons"][nom_tronçon] is None:
-                logging.error(
-                    "Le course «{}» référence le tronçon «{}»".format(
-                        nom_course, nom_tronçon))
+                logging.error(f"La course «{nom_course}» référence le tronçon "
+                              f"«{nom_tronçon}»")
             elif nom_tronçon.swapcase() in course["tracé"]:
-                logging.error(
-                    "Le tronçon «{}» est référencé sous plusieurs formes dans la course «{}»".format(
-                        nom_tronçon, nom_course))
+                logging.error(f"Le tronçon «{nom_tronçon}» est référencé sous "
+                              "plusieurs formes dans la course "
+                              f"«{nom_course}»")
             elif course["tracé"].count(nom_tronçon) > 1:
-                logging.error(
-                    "Le tronçon «{}» est référencé plusieurs fois dans la course «{}»".format(
-                        nom_tronçon, nom_course))
+                logging.error(f"Le tronçon «{nom_tronçon}» est référencé "
+                              f"plusieurs fois dans la course «{nom_course}»")
 
     # Choix de la course par le joueur
     noms = sorted(parcours["courses"])
@@ -158,7 +154,6 @@ Paire = collections.namedtuple("Paire", ["sprinteur", "rouleur"])
 
 
 class ClientServeur:
-
     def send(self, socket_tx, msg):
         socket_tx.send('{}:'.format(len(msg)).encode('utf-8'))
         socket_tx.send(msg)
@@ -182,7 +177,6 @@ class ClientServeur:
 
 
 class Client:
-
     def __getstate__(self):
         None
 
@@ -209,7 +203,6 @@ class Client:
 
 
 class ClientNul(Client):
-
     def afficher(self, tracé, début=None, garde=None, aspiration=list()):
         pass
 
@@ -230,35 +223,37 @@ class ClientNul(Client):
 
 
 class ServeurConsole(Client, ClientServeur):
-
     def __init__(self):
-        serveur = socket.socket(
-            socket.AF_INET, socket.SOCK_STREAM)
+        serveur = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serveur.bind((socket.gethostname(), 0))
         print(serveur.getsockname()[1])
         serveur.listen(1)
         self.socket = serveur.accept()[0]
 
     def afficher(self, tracé, début=None, garde=None, aspiration=list()):
-        message = pickle.dumps({"commande": "afficher",
-                                "tracé": tracé,
-                                "début": début,
-                                "garde": garde,
-                                "aspiration": aspiration})
+        message = pickle.dumps({
+            "commande": "afficher",
+            "tracé": tracé,
+            "début": début,
+            "garde": garde,
+            "aspiration": aspiration
+        })
         self.send(self.socket, message)
 
     def afficher_fatigue(self, tracé, fatigués):
-        message = pickle.dumps(
-            {"commande": "afficher_fatigue",
-             "tracé": tracé,
-             "fatigués": fatigués})
+        message = pickle.dumps({
+            "commande": "afficher_fatigue",
+            "tracé": tracé,
+            "fatigués": fatigués
+        })
         self.send(self.socket, message)
 
     def demander_positions(self, tracé, libres):
-        message = pickle.dumps(
-            {"commande": "demander_positions",
-             "tracé": tracé,
-             "libres": libres})
+        message = pickle.dumps({
+            "commande": "demander_positions",
+            "tracé": tracé,
+            "libres": libres
+        })
         while True:
             self.send(self.socket, message)
             try:
@@ -270,7 +265,7 @@ class ServeurConsole(Client, ClientServeur):
                 libres_temp.remove(sprinteur)
                 libres_temp.remove(rouleur)
                 break
-            except ValueError as err:
+            except ValueError:
                 pass
 
         # message = pickle.dumps({"commande": "position_ok"})
@@ -279,9 +274,11 @@ class ServeurConsole(Client, ClientServeur):
         return Paire(sprinteur, rouleur)
 
     def demander_jeu(self, énergies_sprinteur, énergies_rouleur):
-        message = pickle.dumps({"commande": "demander_jeu",
-                                "énergies_sprinteur": énergies_sprinteur,
-                                "énergies_rouleur": énergies_rouleur})
+        message = pickle.dumps({
+            "commande": "demander_jeu",
+            "énergies_sprinteur": énergies_sprinteur,
+            "énergies_rouleur": énergies_rouleur
+        })
         while True:
             self.send(self.socket, message)
             try:
@@ -316,7 +313,6 @@ class ServeurConsole(Client, ClientServeur):
 
 
 class Console(Client):
-
     def afficher(self, tracé, début=None, garde=None, aspiration=list()):
         if début is None:
             print("\n")
@@ -350,17 +346,15 @@ class Console(Client):
         return Paire(sprinteur, rouleur)
 
     def demander_jeu(self, énergies_sprinteur, énergies_rouleur):
-        print("Choix du sprinteur : {}".format(
-            ", ".join(map(str, énergies_sprinteur))))
-        print("Choix du rouleur : {}".format(
-            ", ".join(map(str, énergies_rouleur))))
+        print("Choix du sprinteur : {}".format(", ".join(
+            map(str, énergies_sprinteur))))
+        print("Choix du rouleur : {}".format(", ".join(
+            map(str, énergies_rouleur))))
 
         while True:
             try:
                 sprinteur = int(
-                    input(
-                        "Énergie du sprinteur {} ? ".format(
-                            self.couleur)))
+                    input("Énergie du sprinteur {} ? ".format(self.couleur)))
                 énergies_sprinteur.remove(sprinteur)
                 break
             except ValueError:
@@ -369,9 +363,7 @@ class Console(Client):
         while True:
             try:
                 rouleur = int(
-                    input(
-                        "Énergie du rouleur {} ? ".format(
-                            self.couleur)))
+                    input("Énergie du rouleur {} ? ".format(self.couleur)))
                 énergies_rouleur.remove(rouleur)
                 break
             except ValueError:
@@ -387,9 +379,8 @@ class Console(Client):
             print(ligne)
 
     def attente(self, couleurs):
-        print("Attente joueur{} : {}".format(
-            "s" if len(couleurs) > 1 else "",
-            ", ".join(couleurs)))
+        print("Attente joueur{} : {}".format("s" if len(couleurs) > 1 else "",
+                                             ", ".join(couleurs)))
 
     def couleur(self, couleur):
         self.couleur = couleur.name
@@ -397,7 +388,6 @@ class Console(Client):
 
 
 class ClientConsole(Console, ClientServeur):
-
     def __init__(self, adresse, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((adresse, port))
@@ -408,24 +398,20 @@ class ClientConsole(Console, ClientServeur):
                 message = self.recv(self.socket)
                 msg = pickle.loads(message)
                 if msg['commande'] == "afficher":
-                    Console.afficher(
-                        self,
-                        msg['tracé'],
-                        msg['début'],
-                        msg['garde'],
-                        msg['aspiration'])
+                    Console.afficher(self, msg['tracé'], msg['début'],
+                                     msg['garde'], msg['aspiration'])
                 elif msg['commande'] == "afficher_fatigue":
-                    Console.afficher_fatigue(
-                        self, msg['tracé'], msg['fatigués'])
+                    Console.afficher_fatigue(self, msg['tracé'],
+                                             msg['fatigués'])
                 elif msg['commande'] == "demander_positions":
                     positions = Console.demander_positions(
                         self, msg['tracé'], msg['libres'])
                     réponse = pickle.dumps(positions)
                     self.socket = self.send(self.socket, réponse)
                 elif msg['commande'] == "demander_jeu":
-                    énergies = Console.demander_jeu(
-                        self, msg['énergies_sprinteur'],
-                        msg['énergies_rouleur'])
+                    énergies = Console.demander_jeu(self,
+                                                    msg['énergies_sprinteur'],
+                                                    msg['énergies_rouleur'])
                     réponse = pickle.dumps(énergies)
                     self.socket = self.send(self.socket, réponse)
                 elif msg['commande'] == "ordre":
@@ -443,21 +429,12 @@ class ClientConsole(Console, ClientServeur):
 
 
 class Joueur:
-
     def __init__(self, couleur, nb_tours):
         self.couleur = couleur
         self.client = ClientNul()
-        self.sprinteur = [2, 2, 2,
-                          3, 3, 3,
-                          4, 4, 4,
-                          5, 5, 5,
-                          9, 9, 9]
+        self.sprinteur = [2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 9, 9, 9]
         self.sprinteur = nb_tours * self.sprinteur
-        self.rouleur = [3, 3, 3,
-                        4, 4, 4,
-                        5, 5, 5,
-                        6, 6, 6,
-                        7, 7, 7]
+        self.rouleur = [3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7]
         self.rouleur = nb_tours * self.rouleur
         self.défausse_sprinteur = []
         self.défausse_rouleur = []
@@ -490,7 +467,6 @@ class Joueur:
 
 
 class Humain(Joueur):
-
     def __init__(self, couleur, nb_tours, client):
         super().__init__(couleur, nb_tours)
         self.client = client
@@ -520,10 +496,10 @@ class Humain(Joueur):
 
     def jouer(self, tracé):
         self.client.afficher(tracé)
-        énergies_sprinteur = sorted(self._piocher(
-            self.sprinteur, self.défausse_sprinteur))
-        énergies_rouleur = sorted(self._piocher(
-            self.rouleur, self.défausse_rouleur))
+        énergies_sprinteur = sorted(
+            self._piocher(self.sprinteur, self.défausse_sprinteur))
+        énergies_rouleur = sorted(
+            self._piocher(self.rouleur, self.défausse_rouleur))
 
         while True:
             choix = self.client.demander_jeu(list(énergies_sprinteur),
@@ -559,8 +535,8 @@ class Robot(Joueur):
         return Paire(sprinteur, rouleur)
 
     def jouer(self, tracé):
-        énergies_sprinteur = self._piocher(
-            self.sprinteur, self.défausse_sprinteur)
+        énergies_sprinteur = self._piocher(self.sprinteur,
+                                           self.défausse_sprinteur)
         énergies_rouleur = self._piocher(self.rouleur, self.défausse_rouleur)
 
         sprinteur = random.sample(énergies_sprinteur, 1)[0]
@@ -576,10 +552,9 @@ class Robot(Joueur):
 
 
 class Robomou(Robot):
-
     def jouer(self, tracé):
-        énergies_sprinteur = self._piocher(
-            self.sprinteur, self.défausse_sprinteur)
+        énergies_sprinteur = self._piocher(self.sprinteur,
+                                           self.défausse_sprinteur)
         énergies_rouleur = self._piocher(self.rouleur, self.défausse_rouleur)
 
         # On a beau jouer au pif, on évite de trop fatiguer
@@ -639,8 +614,8 @@ class Robourrin(Joueur):
         return Paire(tracé.départ - 1, tracé.départ - 1)
 
     def jouer(self, tracé):
-        énergies_sprinteur = self._piocher(
-            self.sprinteur, self.défausse_sprinteur)
+        énergies_sprinteur = self._piocher(self.sprinteur,
+                                           self.défausse_sprinteur)
         énergies_rouleur = self._piocher(self.rouleur, self.défausse_rouleur)
 
         sprinteur = max(énergies_sprinteur)
@@ -663,8 +638,8 @@ class Rofinot(Joueur):
         return Paire(tracé.départ - 1, tracé.départ - 1)
 
     def jouer(self, tracé):
-        énergies_sprinteur = self._piocher(
-            self.sprinteur, self.défausse_sprinteur)
+        énergies_sprinteur = self._piocher(self.sprinteur,
+                                           self.défausse_sprinteur)
         énergies_rouleur = self._piocher(self.rouleur, self.défausse_rouleur)
 
         # On a beau être un bourrin, on évite de trop fatiguer
@@ -726,15 +701,13 @@ class Pente(enum.Enum):
 
 
 class Case:
-
     def __init__(self, pente):
         self.droite = None
         self.gauche = None
         self.pente = pente
 
     def est_vide(self):
-        return (self.droite is None and
-                self.gauche is None)
+        return (self.droite is None and self.gauche is None)
 
     def poser(self, pion):
         """Renvoit vrai ssi le pion a bien pu être posé sur la case
@@ -762,7 +735,6 @@ class Profil(enum.Enum):
 
 
 class Pion(collections.namedtuple("Pion", ["profil", "joueur"])):
-
     def __str__(self):
         retour = self.profil.name[0].upper()
         retour += self.joueur.couleur.name[0].lower()
@@ -771,7 +743,6 @@ class Pion(collections.namedtuple("Pion", ["profil", "joueur"])):
 
 
 class Tracé:
-
     def __init__(self, cases, départ, arrivée, lg_tour):
         self.cases = cases
         self._départ = départ
@@ -799,9 +770,8 @@ class Tracé:
         return self._lg_tour
 
     def est_flamme(self, indice):
-        retour = (indice == self.départ or
-                  indice == self.arrivée or
-                  (indice - self.départ) % self.lg_tour == 0)
+        retour = (indice == self.départ or indice == self.arrivée
+                  or (indice - self.départ) % self.lg_tour == 0)
         return retour
 
     def poser(self, pion, ligne):
@@ -923,8 +893,8 @@ class Tracé:
                 ligne = " Prochain point d'étape au km {} : ".format(
                     i - self.départ)
                 j = i + 1
-                while (j < self.arrivée and
-                       self.cases[j].pente == self.cases[i].pente):
+                while (j < self.arrivée
+                       and self.cases[j].pente == self.cases[i].pente):
                     j += 1
                 if self.cases[i].pente == Pente.col:
                     ligne += "ascension"
@@ -941,8 +911,9 @@ class Tracé:
     def déplacer(self, paires):
         """Applique, du coureur en tête à la voiture-balai, les déplacements
         """
-        for i in reversed(range(min(self.positions.values()),
-                                1 + max(self.positions.values()))):
+        for i in reversed(
+                range(min(self.positions.values()),
+                      1 + max(self.positions.values()))):
             case = self.cases[i]
             # Le pion droit d'abord
             pion = case.droite
@@ -985,13 +956,14 @@ class Tracé:
         """
         # Détermination des cases d'aspiration
         cases_aspiration = list()
-        for i in range(min(self.positions.values()) + 1,
-                       max(self.positions.values())):
-            if (not self.cases[i - 1].est_vide() and
-                    not self.cases[i - 1].pente == Pente.col and
-                    self.cases[i].est_vide() and
-                    not self.cases[i + 1].est_vide() and
-                    not self.cases[i + 1].pente == Pente.col):
+        for i in range(
+                min(self.positions.values()) + 1,
+                max(self.positions.values())):
+            if (not self.cases[i - 1].est_vide()
+                    and not self.cases[i - 1].pente == Pente.col
+                    and self.cases[i].est_vide()
+                    and not self.cases[i + 1].est_vide()
+                    and not self.cases[i + 1].pente == Pente.col):
                 cases_aspiration.append(i)
 
         # Affichage
@@ -1002,8 +974,8 @@ class Tracé:
         # Application de l'aspiration
         for i in cases_aspiration:
             j = i - 1
-            while not (self.cases[j].est_vide() or
-                       self.cases[j].pente == Pente.col):
+            while not (self.cases[j].est_vide()
+                       or self.cases[j].pente == Pente.col):
                 case = self.cases[j]
                 pion = case.droite
                 self.retirer(pion)
@@ -1022,9 +994,8 @@ class Tracé:
         for i in range(min(self.positions.values()),
                        1 + max(self.positions.values())):
             case = self.cases[i]
-            if (not case.est_vide() and
-                    i < self.arrivée and
-                    self.cases[i + 1].est_vide()):
+            if (not case.est_vide() and i < self.arrivée
+                    and self.cases[i + 1].est_vide()):
                 pion = case.droite
                 if pion.profil == Profil.sprinteur:
                     pion.joueur.défausse_sprinteur.append(2)
@@ -1046,8 +1017,8 @@ class Tracé:
         for couleur in sorted(fatigués, key=lambda c: c.name):
             ligne = "Équipe {}e : fatigue ".format(couleur.name)
             coureurs = sorted(fatigués[couleur], key=str)
-            ligne += " et ".join(["du {}".format(x.profil.name)
-                                  for x in coureurs])
+            ligne += " et ".join(
+                ["du {}".format(x.profil.name) for x in coureurs])
             if couleur.name == couleur_joueur:
                 ligne += " <---"
             print(ligne)
@@ -1056,8 +1027,9 @@ class Tracé:
         """Affiche l'ordre des équipes dans la course
         """
         couleurs = list()
-        for i in reversed(range(min(self.positions.values()),
-                                max(self.positions.values()) + 1)):
+        for i in reversed(
+                range(min(self.positions.values()),
+                      max(self.positions.values()) + 1)):
             case = self.cases[i]
             pion = case.droite
             if pion is not None and pion.joueur.couleur not in couleurs:
@@ -1070,16 +1042,16 @@ class Tracé:
 
 
 def principal(nb_humains):
-    tracé, nb_tours = choisir_course("courses.json")
+    tracé, nb_tours = choisir_course(
+        os.path.join(os.path.dirname(sys.argv[0]), "courses.json"))
 
     couleurs = [Couleur.gris, Couleur.bleu, Couleur.noir, Couleur.vert]
     joueurs = list()
     joueurs.append(Humain(couleurs[0], nb_tours, Console()))
     tâches = list()
     for i in range(1, nb_humains):
-        tâche = threading.Thread(
-            target=lambda j, c: j.append(
-                Humain(c, nb_tours, ServeurConsole())),
+        tâche = threading.Thread(target=lambda j, c: j.append(
+            Humain(c, nb_tours, ServeurConsole())),
             args=(joueurs, couleurs[i]))
         tâche.start()
         tâches.append(tâche)
@@ -1122,8 +1094,7 @@ def principal(nb_humains):
 
         for joueur in joueurs:
             if (joueur not in paires and
-                (joueur not in tâches or
-                 not tâches[joueur].is_alive())):
+                    (joueur not in tâches or not tâches[joueur].is_alive())):
                 tâches[joueur] = threading.Thread(
                     target=lambda t, j, p: p.update([(j, j.jouer(t))]),
                     args=(tracé, joueur, paires))
@@ -1140,8 +1111,10 @@ def principal(nb_humains):
             if not attendre_couleurs:
                 break
             else:
-                if len([c for c in attendre_couleurs_precedentes
-                        if c not in attendre_couleurs]):
+                if len([
+                        c for c in attendre_couleurs_precedentes
+                        if c not in attendre_couleurs
+                ]):
                     for joueur in paires.keys():
                         joueur.client.attente(attendre_couleurs)
                     attendre_couleurs_precedentes = list(attendre_couleurs)
