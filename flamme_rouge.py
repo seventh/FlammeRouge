@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Copyright ou © ou Copr. Guillaume Lemaître (2016, 2020)
@@ -52,7 +52,7 @@ import time
 def choisir_course(chemin):
     # Lecture du fichier
     parcours = None
-    with open(chemin, "rt") as entrée:
+    with open(chemin, "rt", encoding="utf-8") as entrée:
         parcours = json.load(entrée)
 
     # Vérification
